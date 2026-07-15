@@ -1,0 +1,15 @@
+# render.yaml — Render Blueprint (Infrastructure as Code)
+# This file tells Render how to build and run the CTE323 Portal.
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: CTE323-Portal
+    runtime: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app --bind 0.0.0.0:$PORT"
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: PYTHON_VERSION
+        value: "3.11.8"

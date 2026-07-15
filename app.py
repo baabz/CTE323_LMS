@@ -1502,10 +1502,15 @@ def student_announcements():
 
 # =============================================================================
 #  ENTRY POINT
+#
+#  init_db() runs at module level so it executes both when running locally
+#  with `python app.py` AND when gunicorn imports the module on Render.
 # =============================================================================
 
+init_db()
+
 if __name__ == '__main__':
-    init_db()
-    print("[START] CTE323 Portal v2 running at http://127.0.0.1:5000")
-    print("        Admin login: username='admin'  password='admin123'")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    print(f"[START] CTE323 Portal v2 running at http://127.0.0.1:{port}")
+    print("        Admin login: username='Musa Yahya'  password='260697'")
+    app.run(debug=True, host='0.0.0.0', port=port)
