@@ -624,8 +624,11 @@
 
     </nav>
 
-    {# Logout #}
+    {# Landing Page + Logout #}
     <div class="sidebar-footer">
+      <a href="{{ url_for('portfolio') }}" class="sidebar-link" style="color:var(--text-secondary);">
+        <i class="bi bi-globe2"></i> Landing Page
+      </a>
       <a href="{{ url_for('logout') }}" class="sidebar-link">
         <i class="bi bi-box-arrow-left"></i> Logout
       </a>
@@ -679,6 +682,38 @@
      (login, register, portfolio, showcase pages)
      =================================================================== #}
   <div style="min-height:100vh;">
+    {# Floating Back to Home button on guest pages #}
+    <a href="{{ url_for('portfolio') }}" class="back-home-btn" title="Back to Home">
+      <i class="bi bi-house-fill"></i>
+    </a>
+    <style>
+      .back-home-btn {
+        position: fixed;
+        top: 1.25rem;
+        left: 1.25rem;
+        z-index: 998;
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: rgba(30, 41, 59, 0.85);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255,255,255,0.1);
+        display: flex; align-items: center; justify-content: center;
+        color: #94a3b8;
+        font-size: 1.15rem;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+      .back-home-btn:hover {
+        background: rgba(59, 130, 246, 0.2);
+        border-color: rgba(59, 130, 246, 0.4);
+        color: #60a5fa;
+        transform: scale(1.1);
+        box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2);
+      }
+      .back-home-btn:active {
+        transform: scale(0.95);
+      }
+    </style>
     {% with messages = get_flashed_messages(with_categories=True) %}
       {% if messages %}
         <div style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:999;width:90%;max-width:420px;">
