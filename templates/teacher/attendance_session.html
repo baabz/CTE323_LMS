@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Session Details · CTE323{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <div class="page-header-row">
+    <div>
+      <h1>Session Details</h1>
+      <p class="text-muted">Session date: {{ session.session_date }}</p>
+      <p class="text-muted">Created by: {{ creator.full_name if creator else 'Unknown' }}</p>
+    </div>
+    <a href="{{ url_for('teacher_attendance_sessions') }}" class="btn btn-secondary btn-sm">
+      ← Back to History
+    </a>
+  </div>
+
+  <div class="card attendance-card">
+    <div class="card-header">
+      <h2>Attendance Roll</h2>
+      <span class="badge badge-info">{{ attendance_roll|length }} present</span>
+    </div>
+    <div class="card-body">
+      {% if attendance_roll %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Scan Time</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in attendance_roll %}
+              <tr>
+                <td>{{ record.full_name }}</td>
+                <td><code>{{ record.username }}</code></td>
+                <td>{{ record.scanned_at[:19] if record.scanned_at else '—' }}</td>
+                <td>
+                  {% if record.marked_present %}
+                    <span class="badge badge-success">Present</span>
+                  {% else %}
+                    <span class="badge badge-danger">Absent</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-muted">No attendance records were captured for this session.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<style>
+  .attendance-card {
+    margin-top: 1rem;
+  }
+</style>
+{% endblock %}

@@ -1,0 +1,272 @@
+{% extends "base.html" %}
+{#
+  feed_post.html — Post to Class Feed (shared by admin and sub_teacher)
+  ======================================================================
+  LESSON: Dynamic form fields with JavaScript
+    This form has TWO possible input sections:
+      1. Image upload  (shown when user picks "Image")
+      2. YouTube URL   (shown when user picks "Video Link")
+
+    Only one section is visible at a time. Vanilla JavaScript listens
+    for the radio button 'change' event and shows/hides the relevant
+    <div> — no page reload needed.
+#}
+
+{% block title %}Post to Feed{% endblock %}
+
+{% block extra_head %}
+<style>
+  .post-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 18px; overflow: hidden; max-width: 620px; margin: 0 auto;
+  }
+
+  .post-card-header {
+    padding: 2rem 2rem 1.5rem; border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .post-header-icon {
+    width: 58px; height: 58px; border-radius: 14px;
+    background: rgba(245,158,11,0.12); color: #fbbf24;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.6rem; margin: 0 auto 0.85rem;
+  }
+  .post-card-header h1 { font-size: 1.2rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+  .post-card-header p  { color: var(--text-secondary); font-size: 0.82rem; margin: 0.3rem 0 0; }
+
+  .post-card-body { padding: 1.75rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.3rem; }
+
+  /* Media type radio cards */
+  .media-options { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+  .media-option {
+    background: rgba(15,23,42,0.5); border: 2px solid var(--border);
+    border-radius: 12px; padding: 1rem 1.1rem;
+    display: flex; align-items: center; gap: 0.75rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .media-option:hover { border-color: rgba(255,255,255,0.15); }
+  .media-option.selected-image { border-color: #34d399; background: rgba(16,185,129,0.06); }
+  .media-option.selected-video { border-color: #f87171; background: rgba(239,68,68,0.06); }
+  .media-option input[type="radio"] { accent-color: #fbbf24; width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+  .media-option-icon { font-size: 1.3rem; }
+  .media-option-label { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .media-option-hint  { font-size: 0.73rem; color: var(--text-secondary); margin: 0; }
+
+  /* Drop zone for image */
+  .drop-zone {
+    border: 2px dashed rgba(255,255,255,0.1); border-radius: 12px;
+    padding: 2.5rem 1rem; text-align: center;
+    background: rgba(15,23,42,0.4); transition: all 0.22s; cursor: pointer;
+    position: relative;
+  }
+  .drop-zone:hover, .drop-zone.dragover { border-color: #34d399; background: rgba(16,185,129,0.05); }
+  .drop-zone.has-file { border-color: rgba(16,185,129,0.4); background: rgba(16,185,129,0.05); }
+  .drop-zone input[type="file"] { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+  .drop-icon  { font-size: 2.4rem; color: var(--text-muted); margin-bottom: 0.4rem; }
+  .drop-label { color: #94a3b8; font-weight: 500; font-size: 0.88rem; }
+  .drop-hint  { color: var(--text-muted); font-size: 0.76rem; margin-top: 0.25rem; }
+  .file-chosen { display:none; margin-top:0.85rem; background:rgba(16,185,129,0.1); color:#34d399; border:1px solid rgba(16,185,129,0.2); padding:0.5rem 1rem; border-radius:8px; font-size:0.82rem; font-weight:600; }
+
+  /* YouTube URL input */
+  .yt-input-wrap { display: flex; align-items: center; gap: 0; }
+  .yt-prefix {
+    background: rgba(239,68,68,0.1); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.25); border-right: none;
+    border-radius: 10px 0 0 10px; padding: 0 1rem; height: 46px;
+    display: flex; align-items: center; font-size: 1.1rem; flex-shrink: 0;
+  }
+  .yt-input-wrap .input-dark {
+    border-radius: 0 10px 10px 0; border-left: none;
+    flex: 1;
+  }
+
+  /* Buttons */
+  .btn-row { display: flex; gap: 1rem; }
+  .btn-publish {
+    flex: 1; background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #0f172a; border: none; border-radius: 10px; padding: 0.85rem;
+    font-size: 0.95rem; font-weight: 700; font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: all 0.22s;
+    display: flex; align-items: center; justify-content: center; gap: 0.5rem;
+  }
+  .btn-publish:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(245,158,11,0.35); }
+  .btn-cancel-post {
+    background: rgba(30,41,59,0.6); color: var(--text-secondary);
+    border: 1px solid var(--border); border-radius: 10px; padding: 0.85rem 1.5rem;
+    font-size: 0.9rem; font-weight: 600; font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: all 0.2s; text-align: center;
+  }
+  .btn-cancel-post:hover { color: var(--text-primary); }
+
+  .char-count { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 0.2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="post-card">
+
+  <div class="post-card-header">
+    <div class="post-header-icon"><i class="bi bi-megaphone-fill"></i></div>
+    <h1>Post a Class Activity</h1>
+    <p>Visible to all students and visitors on the public feed</p>
+  </div>
+
+  <form action="{{ url_for('post_to_feed') }}" method="POST"
+        enctype="multipart/form-data" novalidate id="feed-post-form">
+
+    <div class="post-card-body">
+
+      {# Title #}
+      <div>
+        <label class="form-label-dark" for="post-title">Title</label>
+        <input type="text" class="input-dark" id="post-title" name="title"
+               placeholder='e.g. "Lab 5 — Sorting Algorithms Demo"'
+               maxlength="150" required>
+      </div>
+
+      {# Description #}
+      <div>
+        <label class="form-label-dark" for="post-desc">
+          Description <span style="opacity:0.45; font-weight:400; text-transform:none;">(optional)</span>
+        </label>
+        <textarea class="input-dark" id="post-desc" name="description" rows="3"
+                  maxlength="500" placeholder="Brief description of this activity..."
+                  style="resize:vertical;"></textarea>
+        <div class="char-count" id="desc-count">0 / 500</div>
+      </div>
+
+      {# Media type selector #}
+      <div>
+        <label class="form-label-dark">Media Type</label>
+        <div class="media-options">
+
+          <label class="media-option" id="opt-image" for="type-image">
+            <input type="radio" name="media_type" id="type-image"
+                   value="image" checked onchange="toggleMedia('image')">
+            <span class="media-option-icon" style="color:#34d399;">🖼️</span>
+            <div>
+              <div class="media-option-label">Image Upload</div>
+              <div class="media-option-hint">JPG, PNG, GIF, WEBP</div>
+            </div>
+          </label>
+
+          <label class="media-option" id="opt-video" for="type-video">
+            <input type="radio" name="media_type" id="type-video"
+                   value="video_link" onchange="toggleMedia('video_link')">
+            <span class="media-option-icon" style="color:#f87171;">▶️</span>
+            <div>
+              <div class="media-option-label">YouTube Link</div>
+              <div class="media-option-hint">Paste a watch URL</div>
+            </div>
+          </label>
+
+        </div>
+      </div>
+
+      {# Image upload section #}
+      <div id="section-image">
+        <label class="form-label-dark">Image File</label>
+        <div class="drop-zone" id="drop-zone">
+          <div class="drop-icon"><i class="bi bi-image"></i></div>
+          <div class="drop-label">Click to choose or drag an image here</div>
+          <div class="drop-hint">JPG &nbsp;·&nbsp; JPEG &nbsp;·&nbsp; PNG &nbsp;·&nbsp; GIF &nbsp;·&nbsp; WEBP</div>
+          <input type="file" id="feed-image" name="feed_image"
+                 accept=".jpg,.jpeg,.png,.gif,.webp">
+        </div>
+        <div class="file-chosen" id="file-chosen">
+          <i class="bi bi-paperclip me-1"></i><span id="file-chosen-name"></span>
+        </div>
+      </div>
+
+      {# YouTube URL section (hidden by default) #}
+      <div id="section-video" style="display:none;">
+        <label class="form-label-dark" for="video-url">YouTube URL</label>
+        <div class="yt-input-wrap">
+          <span class="yt-prefix"><i class="bi bi-youtube"></i></span>
+          <input type="url" class="input-dark" id="video-url" name="video_url"
+                 placeholder="https://www.youtube.com/watch?v=...">
+        </div>
+        <p style="font-size:0.76rem; color:var(--text-muted); margin-top:0.4rem;">
+          <i class="bi bi-info-circle me-1"></i>Paste the full YouTube watch URL — the portal will embed it automatically.
+        </p>
+      </div>
+
+      {# Buttons #}
+      <div class="btn-row">
+        <button type="submit" id="submit-feed-btn" class="btn-publish">
+          <i class="bi bi-megaphone"></i> Publish to Feed
+        </button>
+        <a href="{{ url_for('index') }}" class="btn-cancel-post">Cancel</a>
+      </div>
+
+    </div>
+  </form>
+
+</div>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  /**
+   * toggleMedia(type)
+   * LESSON: Vanilla JS — shows/hides form sections without a page reload.
+   *   'image'      → show image drop zone, hide YouTube input
+   *   'video_link' → show YouTube input, hide image drop zone
+   */
+  function toggleMedia(type) {
+    const imgSec   = document.getElementById('section-image');
+    const vidSec   = document.getElementById('section-video');
+    const optImage = document.getElementById('opt-image');
+    const optVideo = document.getElementById('opt-video');
+
+    if (type === 'image') {
+      imgSec.style.display = 'block';
+      vidSec.style.display = 'none';
+      optImage.classList.add('selected-image');
+      optVideo.classList.remove('selected-video');
+    } else {
+      imgSec.style.display = 'none';
+      vidSec.style.display = 'block';
+      optVideo.classList.add('selected-video');
+      optImage.classList.remove('selected-image');
+    }
+  }
+
+  // Apply initial selected style on load
+  toggleMedia('image');
+
+  // File picker feedback
+  const fileInput  = document.getElementById('feed-image');
+  const fileChosen = document.getElementById('file-chosen');
+  const fileName   = document.getElementById('file-chosen-name');
+  const dropZone   = document.getElementById('drop-zone');
+
+  fileInput.addEventListener('change', function() {
+    if (this.files && this.files.length > 0) {
+      fileName.textContent = this.files[0].name;
+      fileChosen.style.display = 'block';
+      dropZone.classList.add('has-file');
+    } else {
+      fileChosen.style.display = 'none';
+      dropZone.classList.remove('has-file');
+    }
+  });
+
+  // Drag-and-drop visual feedback
+  dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop',      e => { e.preventDefault(); dropZone.classList.remove('dragover'); });
+
+  // Description character counter
+  const descArea  = document.getElementById('post-desc');
+  const descCount = document.getElementById('desc-count');
+  descArea.addEventListener('input', () => {
+    const len = descArea.value.length;
+    descCount.textContent = `${len} / 500`;
+    descCount.style.color = len > 450 ? '#f87171' : 'var(--text-muted)';
+  });
+</script>
+{% endblock %}

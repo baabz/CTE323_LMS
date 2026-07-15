@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+
+{% block extra_head %}
+<style>
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 280px 1fr;
+    gap: 1.5rem;
+    max-width: 900px;
+  }
+  @media (max-width: 720px) { .profile-layout { grid-template-columns: 1fr; } }
+
+  /* Avatar card */
+  .avatar-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 16px; padding: 2rem;
+    text-align: center;
+  }
+  .avatar-large {
+    width: 110px; height: 110px; border-radius: 50%;
+    margin: 0 auto 1rem;
+    object-fit: cover;
+    border: 3px solid rgba(59,130,246,0.3);
+  }
+  .avatar-large-placeholder {
+    width: 110px; height: 110px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.5rem; font-weight: 800; color: #fff;
+    margin: 0 auto 1rem;
+    border: 3px solid rgba(59,130,246,0.3);
+  }
+  .avatar-card .username {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1rem; font-weight: 700; color: var(--text-primary);
+    margin-bottom: 0.3rem;
+  }
+  .avatar-card .matric {
+    font-family: 'Courier New', monospace;
+    font-size: 0.82rem; color: #60a5fa;
+    background: rgba(59,130,246,0.1); padding: 4px 12px; border-radius: 20px;
+    display: inline-block; margin-bottom: 1.25rem;
+  }
+  .avatar-card .joined {
+    font-size: 0.75rem; color: var(--text-muted); margin-top: 0.75rem;
+  }
+
+  /* Photo upload zone */
+  .photo-upload {
+    border: 2px dashed rgba(255,255,255,0.1); border-radius: 10px;
+    padding: 1rem; text-align: center; cursor: pointer;
+    background: rgba(15,23,42,0.4); transition: all 0.2s;
+    position: relative; margin-top: 1rem;
+  }
+  .photo-upload:hover { border-color: var(--accent-blue); background: rgba(59,130,246,0.05); }
+  .photo-upload input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+  .photo-upload p { font-size: 0.78rem; color: var(--text-secondary); margin: 0.3rem 0 0; }
+
+  /* Info card */
+  .info-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.75rem;
+  }
+  .info-card h2 { font-size: 1.05rem; font-weight: 700; color: var(--text-primary); margin: 0 0 1.4rem; }
+  .info-row {
+    display: flex; flex-direction: column; gap: 0.4rem;
+    padding: 1rem 0; border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-of-type { border-bottom: none; }
+  .info-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); }
+  .info-value { font-size: 0.92rem; color: var(--text-primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-person-circle me-2" style="color:#a78bfa;"></i>My Profile</h1>
+    <p>Personalise your portal identity</p>
+  </div>
+</div>
+
+<div class="profile-layout">
+
+  {# --- Left: Avatar Card --- #}
+  <div class="avatar-card">
+    {% if profile['profile_picture'] %}
+      <img src="{{ url_for('serve_profile_pic', filename=profile['profile_picture']) }}"
+           alt="Profile picture" class="avatar-large">
+    {% else %}
+      <div class="avatar-large-placeholder">
+        {{ (profile['full_name'] or profile['username'] or 'S')[0] | upper }}
+      </div>
+    {% endif %}
+
+    <div class="username">{{ profile['full_name'] or profile['username'] }}</div>
+    <div class="matric">{{ profile['username'] }}</div>
+
+    <span class="pill badge-blue">Student</span>
+
+    <div class="joined">
+      <i class="bi bi-calendar3 me-1"></i> Joined {{ profile['created_at'] }}
+    </div>
+
+    {# Photo upload form #}
+    <form action="{{ url_for('student_profile') }}" method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="action" value="update_pic">
+      <div class="photo-upload" id="photo-zone">
+        <i class="bi bi-camera" style="font-size:1.3rem; color:var(--text-muted);"></i>
+        <p>Click to change photo<br><small>JPG, PNG or WEBP</small></p>
+        <input type="file" name="profile_pic" id="profile_pic" accept=".jpg,.jpeg,.png,.webp"
+               onchange="this.form.submit()">
+      </div>
+    </form>
+  </div>
+
+  {# --- Right: Edit Info Card --- #}
+  <div class="info-card">
+    <h2>Account Details</h2>
+
+    <div class="info-row">
+      <div class="info-label">Matric Number</div>
+      <div class="info-value" style="font-family:'Courier New',monospace; color:#60a5fa;">
+        {{ profile['username'] }}
+      </div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-label">Role</div>
+      <div class="info-value">
+        <span class="pill badge-blue">Student</span>
+      </div>
+    </div>
+
+    <div class="info-row">
+      <div class="info-label">Member Since</div>
+      <div class="info-value" style="color:var(--text-secondary);">{{ profile['created_at'] }}</div>
+    </div>
+
+    {# Display name edit #}
+    <div style="margin-top:1.5rem; padding-top:1.5rem; border-top:1px solid var(--border);">
+      <h2 style="margin-bottom:1rem;">Edit Display Name</h2>
+      <form action="{{ url_for('student_profile') }}" method="POST">
+        <input type="hidden" name="action" value="update_name">
+
+        <label class="form-label-dark" for="full_name">Display Name</label>
+        <input type="text" class="input-dark" id="full_name" name="full_name"
+               value="{{ profile['full_name'] or '' }}"
+               placeholder="Enter your name" maxlength="100"
+               style="margin-bottom:1rem;">
+
+        <button type="submit" class="btn-primary-dark" style="width:100%; justify-content:center;">
+          <i class="bi bi-check-lg"></i> Save Changes
+        </button>
+      </form>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

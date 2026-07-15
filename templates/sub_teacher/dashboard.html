@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{#
+  sub_teacher/dashboard.html — Lab Assistant Dashboard
+  ======================================================
+  This is a RESTRICTED dashboard. Sub-teachers can see:
+    - How many handouts they can manage
+    - How many feed posts exist
+
+  They CANNOT see:
+    - Student submission logs
+    - Grade data
+    - Other staff accounts
+#}
+
+{% block title %}Lab Assistant Dashboard{% endblock %}
+
+{% block content %}
+
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="h3 fw-bold mb-0">
+        <i class="bi bi-house text-primary me-2"></i>Lab Assistant Dashboard
+      </h1>
+      <p class="text-muted small mb-0">
+        Welcome, <strong>{{ session.get('full_name') or session.get('username') }}</strong>
+      </p>
+    </div>
+    <a href="{{ url_for('post_to_feed') }}" class="btn btn-primary">
+      <i class="bi bi-megaphone me-1"></i> Post to Feed
+    </a>
+  </div>
+
+  <!-- Stat Cards -->
+  <div class="row g-3 mb-4">
+
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon text-primary">📄</div>
+        <div class="stat-number">{{ handout_count }}</div>
+        <div class="stat-label">Course Handouts</div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon" style="color: #0d9488;">📡</div>
+        <div class="stat-number">{{ feed_count }}</div>
+        <div class="stat-label">Feed Posts Published</div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="stat-card">
+        <div class="stat-icon" style="color: #94a3b8;">🔒</div>
+        <div class="stat-number" style="font-size:1.2rem; color: #94a3b8;">N/A</div>
+        <div class="stat-label">Grades (Admin Only)</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Quick Action Cards -->
+  <div class="row g-3">
+
+    <div class="col-md-4">
+      <a href="{{ url_for('upload_handout') }}" class="text-decoration-none">
+        <div class="card p-3 d-flex flex-row align-items-center gap-3 h-100">
+          <div style="font-size: 2.5rem;">📤</div>
+          <div>
+            <h2 class="h6 fw-bold mb-0">Upload a Handout</h2>
+            <p class="text-muted small mb-0">Share PDF, DOCX, PPTX with students</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="{{ url_for('teacher_handouts') }}" class="text-decoration-none">
+        <div class="card p-3 d-flex flex-row align-items-center gap-3 h-100">
+          <div style="font-size: 2.5rem;">📁</div>
+          <div>
+            <h2 class="h6 fw-bold mb-0">View Handouts</h2>
+            <p class="text-muted small mb-0">Browse all uploaded course materials</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+    <div class="col-md-4">
+      <a href="{{ url_for('post_to_feed') }}" class="text-decoration-none">
+        <div class="card p-3 d-flex flex-row align-items-center gap-3 h-100">
+          <div style="font-size: 2.5rem;">📡</div>
+          <div>
+            <h2 class="h6 fw-bold mb-0">Post to Class Feed</h2>
+            <p class="text-muted small mb-0">Share an image or YouTube video</p>
+          </div>
+        </div>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Access restriction notice -->
+  <div class="mt-4 p-3 rounded" style="background: #f1f5f9; border-left: 4px solid #cbd5e1;">
+    <p class="mb-0 small text-muted">
+      <i class="bi bi-lock me-1"></i>
+      <strong>Your access level:</strong> You can upload handouts and post to the class feed.
+      Student submission logs, grades, and staff management are restricted to the admin account.
+    </p>
+  </div>
+
+{% endblock %}

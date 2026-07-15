@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Manage Handouts{% endblock %}
+
+{% block extra_head %}
+<style>
+  .file-badge {
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 8px; border-radius: 6px;
+    display: inline-block;
+  }
+  .file-badge.pdf  { background:rgba(239,68,68,0.12); color:#f87171; }
+  .file-badge.doc,
+  .file-badge.docx { background:rgba(59,130,246,0.12); color:#60a5fa; }
+  .file-badge.pptx { background:rgba(245,158,11,0.12); color:#fbbf24; }
+  .file-badge.zip  { background:rgba(139,92,246,0.12); color:#a78bfa; }
+  .file-badge.txt  { background:rgba(100,116,139,0.12); color:#94a3b8; }
+
+  .btn-dl { color:#60a5fa; font-size:0.78rem; font-weight:600; }
+  .btn-dl:hover { color:#93c5fd; }
+  .btn-del {
+    background: rgba(239,68,68,0.1); color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2); border-radius: 8px;
+    padding: 0.3rem 0.75rem; font-size: 0.78rem; font-weight: 600;
+    cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+  }
+  .btn-del:hover { background: rgba(239,68,68,0.2); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-folder2-open me-2" style="color:#34d399;"></i>Course Handouts</h1>
+    <p>{{ handouts|length }} file{{ 's' if handouts|length != 1 else '' }} published</p>
+  </div>
+  <div style="display:flex; gap:0.75rem;">
+    <a href="{{ url_for('admin_dashboard') }}" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+    <a href="{{ url_for('upload_handout') }}" class="btn-primary-dark"><i class="bi bi-upload"></i> Upload New</a>
+  </div>
+</div>
+
+<div class="dark-card" style="border-radius:14px; overflow:hidden;">
+  {% if handouts %}
+    <div style="overflow-x:auto;">
+      <table class="dark-table" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="padding-left:1.5rem;">#</th>
+            <th>Title</th>
+            <th>Type</th>
+            <th>Uploaded</th>
+            <th style="text-align:right; padding-right:1.5rem;">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for h in handouts %}
+          <tr>
+            <td style="padding-left:1.5rem; color:var(--text-muted); font-weight:600;">{{ loop.index }}</td>
+            <td>
+              <div style="color:var(--text-primary); font-weight:600; font-size:0.9rem;">
+                <i class="bi bi-file-earmark-text me-1" style="color:var(--text-muted);"></i>{{ h['title'] }}
+              </div>
+              {% if h['description'] %}
+                <div style="color:var(--text-secondary); font-size:0.77rem; margin-top:2px;">{{ h['description'] }}</div>
+              {% endif %}
+            </td>
+            <td>
+              {% set ext = h['filename'].rsplit('.', 1)[-1].lower() %}
+              <span class="file-badge {{ ext }}">{{ ext }}</span>
+            </td>
+            <td style="color:var(--text-secondary); font-size:0.8rem; white-space:nowrap;">
+              <i class="bi bi-calendar3 me-1"></i>{{ h['uploaded_at'] }}
+            </td>
+            <td style="text-align:right; padding-right:1.5rem;">
+              <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.75rem;">
+                <a href="{{ url_for('download_handout', filename=h['filename']) }}" class="btn-dl">
+                  <i class="bi bi-download me-1"></i>Download
+                </a>
+                {% if session.get('role') == 'admin' %}
+                <form action="{{ url_for('delete_handout', handout_id=h['id']) }}" method="POST" style="display:inline;"
+                      onsubmit="return confirm('Delete \'{{ h['title'] }}\'? This cannot be undone.')">
+                  <button type="submit" class="btn-del">
+                    <i class="bi bi-trash me-1"></i>Delete
+                  </button>
+                </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📂</div>
+      <h3>No handouts yet</h3>
+      <p>Upload your first handout to make it available to students.</p>
+      <a href="{{ url_for('upload_handout') }}" class="btn-primary-dark">
+        <i class="bi bi-upload"></i> Upload Handout
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

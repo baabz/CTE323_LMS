@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Announcements{% endblock %}
+
+{% block extra_head %}
+<style>
+  .announce-list { display: flex; flex-direction: column; gap: 1rem; }
+
+  .announce-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.4rem 1.6rem;
+    position: relative; transition: border-color 0.2s;
+    animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+  }
+  @keyframes slideIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+  .announce-card.pinned {
+    border-color: rgba(245,158,11,0.3);
+    background: rgba(245,158,11,0.04);
+  }
+  .announce-card.unread { border-left: 3px solid var(--accent-blue); }
+
+  .pin-tag {
+    position: absolute; top: 1rem; right: 1rem;
+    background: rgba(245,158,11,0.15); color: #fbbf24;
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 10px; border-radius: 20px;
+    display: flex; align-items: center; gap: 0.35rem;
+  }
+  .new-tag {
+    position: absolute; top: 1rem; right: 1rem;
+    background: rgba(59,130,246,0.15); color: #60a5fa;
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.06em; padding: 3px 10px; border-radius: 20px;
+  }
+  .announce-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.5rem; padding-right: 5rem; }
+  .announce-content { font-size: 0.88rem; color: #cbd5e1; line-height: 1.7; white-space: pre-line; }
+  .announce-footer { display: flex; align-items: center; gap: 1rem; margin-top: 0.9rem; padding-top: 0.75rem; border-top: 1px solid var(--border); font-size: 0.74rem; color: var(--text-muted); flex-wrap: wrap; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-bell me-2" style="color:#60a5fa;"></i>Announcements</h1>
+    <p>{{ announcements|length }} notice{{ 's' if announcements|length != 1 else '' }}</p>
+  </div>
+  <a href="{{ url_for('student_dashboard') }}" class="btn-ghost"><i class="bi bi-arrow-left"></i> Dashboard</a>
+</div>
+
+{% if announcements %}
+  {# Compute last_seen from session for unread highlighting #}
+  {% set last_seen = session.get('last_seen_announcement_id', 0) %}
+  <div class="announce-list">
+    {% for ann in announcements %}
+    {% set is_unread = ann['id'] > last_seen %}
+    <div class="announce-card {{ 'pinned' if ann['is_pinned'] }} {{ 'unread' if is_unread and not ann['is_pinned'] }}">
+      {% if ann['is_pinned'] %}
+        <span class="pin-tag"><i class="bi bi-pin-angle-fill"></i> Pinned</span>
+      {% elif is_unread %}
+        <span class="new-tag">New</span>
+      {% endif %}
+
+      <h2 class="announce-title">{{ ann['title'] }}</h2>
+      <div class="announce-content">{{ ann['content'] }}</div>
+
+      <div class="announce-footer">
+        <span><i class="bi bi-person me-1"></i>{{ ann['poster_fullname'] or ann['poster_name'] }}</span>
+        <span><i class="bi bi-calendar3 me-1"></i>{{ ann['created_at'] }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📢</div>
+    <h3>No announcements yet</h3>
+    <p>Your lecturer hasn't posted any notices yet. Check back soon.</p>
+  </div>
+{% endif %}
+
+{% endblock %}

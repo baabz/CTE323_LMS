@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Create Announcement{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 18px; overflow: hidden; max-width: 600px; margin: 0 auto;
+  }
+  .form-header {
+    text-align: center; padding: 2rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-header-icon {
+    width: 60px; height: 60px; border-radius: 14px;
+    background: rgba(59,130,246,0.12); color: #60a5fa;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; margin: 0 auto 0.9rem;
+  }
+  .form-header h1 { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+  .form-header p  { color: var(--text-secondary); font-size: 0.83rem; margin: 0.3rem 0 0; }
+  .form-body { padding: 1.75rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  /* Pin toggle */
+  .pin-toggle {
+    display: flex; align-items: center; gap: 1rem;
+    background: rgba(15,23,42,0.4); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.85rem 1rem;
+    cursor: pointer; transition: border-color 0.2s;
+  }
+  .pin-toggle:hover { border-color: var(--accent-blue); }
+  .pin-toggle input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent-blue); cursor: pointer; }
+  .pin-toggle .pin-label { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); }
+  .pin-toggle .pin-hint  { font-size: 0.74rem; color: var(--text-secondary); margin-top: 2px; }
+
+  .btn-row { display: flex; gap: 1rem; margin-top: 0.5rem; }
+  .btn-cancel { flex:1; background:rgba(30,41,59,0.6); color:var(--text-secondary); border:1px solid var(--border); border-radius:10px; padding:0.8rem; font-weight:600; font-size:0.9rem; font-family:'Inter',sans-serif; cursor:pointer; text-align:center; transition:all 0.2s; }
+  .btn-cancel:hover { color:var(--text-primary); }
+  .btn-post { flex:1; background:linear-gradient(135deg,var(--accent-blue),#2563eb); color:#fff; border:none; border-radius:10px; padding:0.8rem; font-weight:600; font-size:0.9rem; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.22s; }
+  .btn-post:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(59,130,246,0.3); }
+
+  .char-count { font-size: 0.72rem; color: var(--text-muted); text-align: right; margin-top: 0.2rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="form-card">
+  <div class="form-header">
+    <div class="form-header-icon"><i class="bi bi-bell-fill"></i></div>
+    <h1>Post Announcement</h1>
+    <p>All students will see this on their dashboard</p>
+  </div>
+
+  <div class="form-body">
+    <form action="{{ url_for('create_announcement') }}" method="POST" novalidate>
+
+      <div>
+        <label class="form-label-dark" for="title">Title</label>
+        <input type="text" class="input-dark" id="title" name="title"
+               placeholder='e.g. "Lab session moved to Friday"'
+               maxlength="150" required>
+      </div>
+
+      <div>
+        <label class="form-label-dark" for="content">Message</label>
+        <textarea class="input-dark" id="content" name="content" rows="5"
+                  placeholder="Write your announcement here..."
+                  maxlength="2000" style="resize:vertical;" required></textarea>
+        <div class="char-count" id="char-count">0 / 2000</div>
+      </div>
+
+      <label class="pin-toggle">
+        <input type="checkbox" name="is_pinned" id="is_pinned" value="1">
+        <div>
+          <div class="pin-label"><i class="bi bi-pin-angle me-1"></i>Pin this announcement</div>
+          <div class="pin-hint">Pinned announcements always appear at the top of the list.</div>
+        </div>
+      </label>
+
+      <div class="btn-row">
+        <a href="{{ url_for('manage_announcements') }}" class="btn-cancel">Cancel</a>
+        <button type="submit" class="btn-post">
+          <i class="bi bi-send me-1"></i> Post Announcement
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  const contentArea = document.getElementById('content');
+  const charCount   = document.getElementById('char-count');
+  contentArea.addEventListener('input', () => {
+    const len = contentArea.value.length;
+    charCount.textContent = `${len} / 2000`;
+    charCount.style.color = len > 1800 ? '#f87171' : 'var(--text-muted)';
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,267 @@
+{% extends "base.html" %}
+{#
+  index.html — Public Class Activity Feed
+  =========================================
+  This page is visible to EVERYONE — no login required.
+
+  LESSON: Unauthenticated public routes
+    The '/' route in app.py has NO @login_required decorator.
+    It calls models.get_all_feed_posts() which executes:
+
+        SELECT f.id, f.title, f.description, f.media_type,
+               f.media_path_or_url, f.created_at,
+               u.username AS uploader_name, u.full_name AS uploader_fullname
+        FROM   public_feed f
+        JOIN   users        u  ON f.uploaded_by = u.id
+        ORDER  BY f.created_at DESC
+
+    The result is passed to this template as 'feed_posts'.
+
+  LESSON: Jinja2 filter — to_embed_url
+    For video posts, we store the raw YouTube watch URL in the database.
+    We can't embed that directly in an <iframe>. The custom Jinja2 filter
+    'to_embed_url' (defined in app.py) converts it:
+
+        {{ post['media_path_or_url'] | to_embed_url }}
+        → https://www.youtube.com/embed/VIDEO_ID
+#}
+
+{% block title %}Class Activity Feed{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ---- Public Feed specific styles ---- */
+
+  .feed-hero {
+    background: linear-gradient(135deg, #1a6fc4 0%, #0f4c8a 100%);
+    color: #fff;
+    padding: 3rem 1rem 2.5rem;
+    text-align: center;
+    margin-bottom: 2.5rem;
+    border-radius: 0 0 24px 24px;
+  }
+
+  .feed-hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .feed-hero p  { color: rgba(255,255,255,0.8); font-size: 1.05rem; }
+
+  .feed-hero .hero-actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+
+  /* ---- Feed post cards ---- */
+  .feed-card {
+    background: #fff;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    margin-bottom: 1.75rem;
+  }
+
+  .feed-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+  }
+
+  .feed-card-media {
+    width: 100%;
+    max-height: 420px;
+    object-fit: cover;
+    display: block;
+  }
+
+  .feed-card-video {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border: none;
+    display: block;
+  }
+
+  .feed-card-body {
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+
+  .feed-card-title {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 0.4rem;
+  }
+
+  .feed-card-desc {
+    color: #475569;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    margin-bottom: 0.75rem;
+  }
+
+  .feed-card-meta {
+    font-size: 0.78rem;
+    color: #94a3b8;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .feed-card-meta i { margin-right: 3px; }
+
+  .media-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    border-radius: 20px;
+  }
+
+  .media-badge.image      { background: #dcfce7; color: #16a34a; }
+  .media-badge.video_link { background: #fee2e2; color: #dc2626; }
+
+  .empty-feed {
+    text-align: center;
+    padding: 5rem 1rem;
+    color: #94a3b8;
+  }
+
+  .empty-feed .empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+{# ============================================================
+   HERO SECTION — visible to everyone
+   ============================================================ #}
+<div class="feed-hero" style="margin-top: -2rem;">
+  <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🎓</div>
+  <h1>CTE323 — Python Programming Language<br><span style="font-size:0.55em; font-weight:400; opacity:0.7;">Class Activity Feed</span></h1>
+  <p>
+    Computer Engineering Programming &mdash; HND Programme<br>
+    <strong>Kaduna Polytechnic</strong>
+  </p>
+  <p class="mb-0" style="font-size: 0.9rem; color: rgba(255,255,255,0.65);">
+    {{ feed_posts|length }} post{{ 's' if feed_posts|length != 1 else '' }} published
+  </p>
+
+  <div class="hero-actions">
+    {% if not session.get('user_id') %}
+      {# For unauthenticated visitors — clear call to action #}
+      <a href="{{ url_for('login') }}" class="btn btn-warning fw-semibold px-4">
+        <i class="bi bi-box-arrow-in-right me-1"></i> Staff / Student Login
+      </a>
+      <a href="{{ url_for('register') }}" class="btn btn-outline-light px-4">
+        <i class="bi bi-person-plus me-1"></i> Register as Student
+      </a>
+    {% else %}
+      {# For logged-in staff — shortcut to post #}
+      {% if session.get('role') in ('admin', 'sub_teacher') %}
+        <a href="{{ url_for('post_to_feed') }}" class="btn btn-warning fw-semibold px-4">
+          <i class="bi bi-megaphone me-1"></i> Post a Class Activity
+        </a>
+      {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+
+{# ============================================================
+   FEED TIMELINE
+   Jinja2 loops over the 'feed_posts' list from the route.
+   Each 'post' is a sqlite3.Row — accessed like: post['title']
+   ============================================================ #}
+{% if feed_posts %}
+
+  <div class="row justify-content-center">
+    <div class="col-lg-8 col-md-10">
+
+      {% for post in feed_posts %}
+      <article class="feed-card" id="post-{{ post['id'] }}">
+
+        {# ---- Media Section ---- #}
+        {% if post['media_type'] == 'image' %}
+          {#
+            For images: serve from our local uploads/feed_media/ folder.
+            The /download/feed-media/ route has NO auth decorator — public access.
+          #}
+          <img
+            src="{{ url_for('download_feed_media', filename=post['media_path_or_url']) }}"
+            alt="{{ post['title'] }}"
+            class="feed-card-media">
+
+        {% elif post['media_type'] == 'video_link' %}
+          {#
+            For videos: use the 'to_embed_url' Jinja2 filter (defined in app.py)
+            to convert the stored YouTube URL into an embeddable iframe src.
+
+            Example stored URL: https://www.youtube.com/watch?v=dQw4w9WgXcQ
+            After filter:       https://www.youtube.com/embed/dQw4w9WgXcQ
+          #}
+          <iframe
+            src="{{ post['media_path_or_url'] | to_embed_url }}"
+            class="feed-card-video"
+            title="{{ post['title'] }}"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowfullscreen>
+          </iframe>
+        {% endif %}
+
+        {# ---- Post Content ---- #}
+        <div class="feed-card-body">
+          <div class="d-flex align-items-start justify-content-between gap-2 mb-1">
+            <h2 class="feed-card-title mb-0">{{ post['title'] }}</h2>
+            <span class="media-badge {{ post['media_type'] }} flex-shrink-0">
+              {{ 'Image' if post['media_type'] == 'image' else 'Video' }}
+            </span>
+          </div>
+
+          {% if post['description'] %}
+            <p class="feed-card-desc">{{ post['description'] }}</p>
+          {% endif %}
+
+          <div class="feed-card-meta">
+            <span>
+              <i class="bi bi-person-circle"></i>
+              {{ post['uploader_fullname'] or post['uploader_name'] }}
+            </span>
+            <span>
+              <i class="bi bi-calendar3"></i>
+              {{ post['created_at'] }}
+            </span>
+
+            {# Admin-only delete button — shown inline on the public page #}
+            {% if session.get('role') == 'admin' %}
+              <form action="{{ url_for('delete_feed_post_route', post_id=post['id']) }}"
+                    method="POST"
+                    style="display:inline;"
+                    onsubmit="return confirm('Delete this post?')">
+                <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-2" style="font-size: 0.75rem;">
+                  <i class="bi bi-trash"></i> Delete
+                </button>
+              </form>
+            {% endif %}
+          </div>
+        </div>
+
+      </article>
+      {% endfor %}
+
+    </div>
+  </div>
+
+{% else %}
+  {# Empty state — no posts yet #}
+  <div class="empty-feed">
+    <div class="empty-icon">📭</div>
+    <h2 class="h5 fw-semibold mb-1">No activities posted yet</h2>
+    <p class="mb-0">
+      {% if session.get('role') in ('admin', 'sub_teacher') %}
+        <a href="{{ url_for('post_to_feed') }}">Be the first to post a class activity!</a>
+      {% else %}
+        Check back soon — the lecturer will post class activities here.
+      {% endif %}
+    </p>
+  </div>
+{% endif %}
+
+{% endblock %}

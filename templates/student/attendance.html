@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block title %}My Attendance · CTE323{% endblock %}
+
+{% block content %}
+<div class="page-container">
+  <h1>My Attendance</h1>
+
+  <!-- Statistics Card -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-value">{{ stats.total_sessions }}</div>
+      <div class="stat-label">Sessions</div>
+      <div class="stat-period">Last {{ stats.period_days }} days</div>
+    </div>
+
+    <div class="stat-card stat-card-success">
+      <div class="stat-value">{{ stats.attended }}</div>
+      <div class="stat-label">Present</div>
+      <div class="stat-percentage">{{ stats.percentage }}%</div>
+    </div>
+
+    <div class="stat-card stat-card-danger">
+      <div class="stat-value">{{ stats.absent }}</div>
+      <div class="stat-label">Absent</div>
+      <div class="stat-count">
+        {% if stats.total_sessions > 0 %}
+          {{ (100 - stats.percentage)|int }}%
+        {% else %}
+          —
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Attendance History -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Attendance History</h2>
+    </div>
+
+    <div class="card-body">
+      {% if history %}
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Status</th>
+              <th>Scan Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for record in history %}
+              <tr>
+                <td>
+                  <strong>{{ record.session_date }}</strong>
+                </td>
+                <td>
+                  {% if record.marked_present %}
+                    <span class="badge badge-success">✓ Present</span>
+                  {% else %}
+                    <span class="badge badge-danger">✗ Absent</span>
+                  {% endif %}
+                </td>
+                <td>
+                  {% if record.scanned_at %}
+                    <small>{{ record.scanned_at|strftime('%H:%M:%S') }}</small>
+                  {% else %}
+                    —
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="text-muted">No attendance records yet.</p>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+
+<style>
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: var(--bg-surface);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid #3b82f6;
+  }
+
+  .stat-card-success {
+    border-left-color: #22c55e;
+  }
+
+  .stat-card-danger {
+    border-left-color: #ef4444;
+  }
+
+  .stat-value {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: var(--text-primary);
+  }
+
+  .stat-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+  }
+
+  .stat-period {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 0.25rem;
+  }
+
+  .stat-percentage {
+    font-size: 1.2rem;
+    color: #22c55e;
+    font-weight: 600;
+    margin-top: 0.5rem;
+  }
+
+  .stat-count {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-top: 0.5rem;
+  }
+
+  .table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .table th {
+    background: var(--bg-surface);
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .table tr:hover {
+    background: var(--bg-surface);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .badge-success {
+    background: rgba(34, 197, 94, 0.1);
+    color: #22c55e;
+  }
+
+  .badge-danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+  }
+</style>
+{% endblock %}

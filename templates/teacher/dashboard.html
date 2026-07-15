@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Lecturer Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Welcome banner */
+  .dash-banner {
+    background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(139,92,246,0.15));
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 16px; padding: 1.75rem 2rem;
+    margin-bottom: 1.75rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .dash-banner .badge-role {
+    display: inline-block;
+    background: rgba(245,158,11,0.15); color: var(--accent-amber);
+    font-size: 0.68rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.08em; padding: 3px 12px; border-radius: 20px;
+    margin-bottom: 0.6rem; border: 1px solid rgba(245,158,11,0.2);
+  }
+  .dash-banner h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+  .dash-banner p  { color: var(--text-secondary); font-size: 0.85rem; margin: 0.2rem 0 0; }
+
+  /* Action tiles */
+  .actions-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .action-tile {
+    background: rgba(30,41,59,0.4); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.4rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: all 0.22s; color: inherit !important;
+  }
+  .action-tile:hover {
+    border-color: rgba(59,130,246,0.3);
+    background: rgba(59,130,246,0.06);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  }
+  .tile-icon {
+    width: 46px; height: 46px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .action-tile h2 { font-size: 0.92rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .action-tile p  { font-size: 0.78rem; color: var(--text-secondary); margin: 0; flex: 1; }
+  .tile-arrow { color: var(--text-muted); font-size: 1rem; margin-top: auto; transition: color 0.2s; }
+  .action-tile:hover .tile-arrow { color: #60a5fa; }
+
+  /* Students table panel */
+  .panel-header {
+    padding: 1.1rem 1.4rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-header h2 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .panel-header p  { font-size: 0.75rem; color: var(--text-secondary); margin: 0.15rem 0 0; }
+
+  .avatar-circle {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+    color: #fff; font-size: 0.75rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .matric-badge {
+    font-family: 'Courier New', monospace; font-size: 0.8rem;
+    background: rgba(59,130,246,0.1); color: #60a5fa;
+    padding: 3px 8px; border-radius: 6px; font-weight: 600;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# Welcome Banner #}
+<div class="dash-banner">
+  <div>
+    <h1>Welcome, {{ session.get('full_name') or session.get('username') }}</h1>
+    <p>CTE323 &mdash; Python Programming Language &nbsp;|&nbsp; Kaduna Polytechnic</p>
+  </div>
+</div>
+
+{# KPI Stats #}
+<p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.85rem;">Overview at a Glance</p>
+<div class="kpi-grid" style="margin-bottom:2rem;">
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;"><i class="bi bi-people"></i></div>
+    <div><div class="kpi-value">{{ stats['student_count'] }}</div><div class="kpi-label">Students</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(16,185,129,0.12);color:#34d399;"><i class="bi bi-person-badge"></i></div>
+    <div><div class="kpi-value">{{ stats['sub_teacher_count'] }}</div><div class="kpi-label">Lab Assistants</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(245,158,11,0.12);color:#fbbf24;"><i class="bi bi-journal-text"></i></div>
+    <div><div class="kpi-value">{{ stats['handout_count'] }}</div><div class="kpi-label">Handouts</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="bi bi-inbox"></i></div>
+    <div><div class="kpi-value">{{ stats['submission_count'] }}</div><div class="kpi-label">Submissions</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(239,68,68,0.12);color:#f87171;"><i class="bi bi-hourglass-split"></i></div>
+    <div><div class="kpi-value">{{ stats['pending_count'] }}</div><div class="kpi-label">Needs Grading</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;"><i class="bi bi-broadcast"></i></div>
+    <div><div class="kpi-value">{{ stats['feed_count'] }}</div><div class="kpi-label">Feed Posts</div></div>
+  </div>
+</div>
+
+{# Action Tiles #}
+<p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.85rem;">Quick Actions</p>
+<div class="actions-grid">
+  <a href="{{ url_for('upload_handout') }}" class="action-tile">
+    <div class="tile-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;"><i class="bi bi-upload"></i></div>
+    <h2>Upload Handout</h2>
+    <p>Share notes, PDFs or slides with students.</p>
+    <div class="tile-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+  </a>
+  <a href="{{ url_for('teacher_handouts') }}" class="action-tile">
+    <div class="tile-icon" style="background:rgba(16,185,129,0.12);color:#34d399;"><i class="bi bi-folder2-open"></i></div>
+    <h2>Manage Handouts</h2>
+    <p>View, download or remove published materials.</p>
+    <div class="tile-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+  </a>
+  <a href="{{ url_for('view_submissions') }}" class="action-tile">
+    <div class="tile-icon" style="background:rgba(245,158,11,0.12);color:#fbbf24;"><i class="bi bi-clipboard-check"></i></div>
+    <h2>Grade Submissions</h2>
+    <p>
+      Review student files and assign scores.
+      {% if stats['pending_count'] > 0 %}
+        <strong style="color:#f87171;">{{ stats['pending_count'] }} pending.</strong>
+      {% endif %}
+    </p>
+    <div class="tile-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+  </a>
+  <a href="{{ url_for('post_to_feed') }}" class="action-tile">
+    <div class="tile-icon" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="bi bi-megaphone"></i></div>
+    <h2>Post to Feed</h2>
+    <p>Share a photo or video on the public class timeline.</p>
+    <div class="tile-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+  </a>
+  <a href="{{ url_for('manage_staff') }}" class="action-tile">
+    <div class="tile-icon" style="background:rgba(16,185,129,0.12);color:#34d399;"><i class="bi bi-people"></i></div>
+    <h2>Manage Staff</h2>
+    <p>Add or view lab assistants and co-lecturers.</p>
+    <div class="tile-arrow"><i class="bi bi-arrow-right-circle-fill"></i></div>
+  </a>
+</div>
+
+{# Students Table #}
+<p style="font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text-muted);margin-bottom:0.85rem;">Enrolled Students</p>
+<div class="dark-card" style="border-radius:14px; overflow:hidden;">
+  <div class="panel-header">
+    <div>
+      <h2>Student Registry</h2>
+      <p>{{ students|length }} student{{ 's' if students|length != 1 else '' }} enrolled this session</p>
+    </div>
+    {% if students %}
+      <span class="pill badge-blue">{{ stats['student_count'] }} Total</span>
+    {% endif %}
+  </div>
+  <div>
+    {% if students %}
+      <div style="overflow-x:auto;">
+        <table class="dark-table" style="width:100%;border-collapse:collapse;">
+          <thead>
+            <tr>
+              <th style="padding-left:1.5rem;">#</th>
+              <th>Student</th>
+              <th>Matric Number</th>
+              <th>Registered</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for student in students %}
+            <tr>
+              <td style="padding-left:1.5rem; color:var(--text-muted); font-weight:600;">{{ loop.index }}</td>
+              <td>
+                <div style="display:flex; align-items:center; gap:0.65rem;">
+                  {% if student['profile_picture'] %}
+                    <img src="{{ url_for('serve_profile_pic', filename=student['profile_picture']) }}"
+                         style="width:32px;height:32px;border-radius:50%;object-fit:cover;border:1px solid var(--border);" alt="">
+                  {% else %}
+                    <div class="avatar-circle">{{ student['username'][0] | upper }}</div>
+                  {% endif %}
+                  <span style="font-weight:600; font-size:0.88rem; color:var(--text-primary);">
+                    {{ student['full_name'] or 'Student' }}
+                  </span>
+                </div>
+              </td>
+              <td><span class="matric-badge">{{ student['username'] }}</span></td>
+              <td style="color:var(--text-secondary); font-size:0.8rem;">
+                <i class="bi bi-calendar3 me-1"></i>{{ student['created_at'] }}
+              </td>
+              <td><span class="pill badge-green"><i class="bi bi-circle-fill me-1" style="font-size:0.45rem;"></i>Active</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <div class="empty-icon">👨‍🎓</div>
+        <h3>No students enrolled yet</h3>
+        <p>Students self-register at <strong>/register</strong> using their 4-digit matric number.</p>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

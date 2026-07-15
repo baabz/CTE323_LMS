@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}My Submissions{% endblock %}
+
+{% block extra_head %}
+<style>
+  .summary-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+  .sum-pill {
+    background: rgba(30,41,59,0.6); border: 1px solid var(--border);
+    border-radius: 30px; padding: 0.4rem 1rem;
+    font-size: 0.8rem; font-weight: 600; color: #94a3b8;
+    display: flex; align-items: center; gap: 0.45rem;
+  }
+  .sum-pill .dot { width: 7px; height: 7px; border-radius: 50%; }
+  .late-badge {
+    background: rgba(239,68,68,0.12); color: #f87171;
+    font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 6px;
+  }
+  .feedback-cell {
+    color: #94a3b8; font-size: 0.82rem; max-width: 200px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-list-check me-2" style="color:#a78bfa;"></i>My Submissions</h1>
+    <p>All your submitted assignments and their grades</p>
+  </div>
+  <a href="{{ url_for('student_dashboard') }}" class="btn-ghost"><i class="bi bi-arrow-left"></i> Back</a>
+</div>
+
+{% if submissions %}
+  {% set graded  = submissions | selectattr('grade') | list | length %}
+  {% set pending = submissions | length - graded %}
+  <div class="summary-bar">
+    <div class="sum-pill"><span class="dot" style="background:#60a5fa;"></span>{{ submissions|length }} Total</div>
+    <div class="sum-pill"><span class="dot" style="background:#34d399;"></span>{{ graded }} Graded</div>
+    <div class="sum-pill"><span class="dot" style="background:#fbbf24;"></span>{{ pending }} Pending</div>
+  </div>
+{% endif %}
+
+<div class="dark-card" style="border-radius:14px; overflow:hidden;">
+  {% if submissions %}
+    <div style="overflow-x:auto;">
+      <table class="dark-table" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="padding-left:1.5rem;">#</th>
+            <th>Assignment</th>
+            <th>File</th>
+            <th>Submitted</th>
+            <th>Timing</th>
+            <th>Grade</th>
+            <th>Feedback</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in submissions %}
+          {#
+            Late check: compare submission time against the task due_date.
+            task_id is None for legacy submissions (submitted before tasks existed).
+          #}
+          <tr>
+            <td style="padding-left:1.5rem; color:var(--text-muted); font-weight:600;">{{ loop.index }}</td>
+            <td style="color:var(--text-primary); font-weight:600;">{{ s['title'] }}</td>
+            <td><code style="color:#94a3b8; font-size:0.8rem;">{{ s['original_name'] }}</code></td>
+            <td style="color:var(--text-secondary); font-size:0.8rem; white-space:nowrap;">{{ s['submitted_at'] }}</td>
+            <td>
+              {% if s['task_due_date'] %}
+                {% if s['submitted_at'] > s['task_due_date'].replace('T',' ') %}
+                  <span class="late-badge"><i class="bi bi-exclamation-triangle me-1"></i>LATE</span>
+                {% else %}
+                  <span class="pill badge-green" style="font-size:0.68rem;">
+                    <i class="bi bi-check2 me-1"></i>On Time
+                  </span>
+                {% endif %}
+              {% else %}
+                <span style="color:var(--text-muted); font-size:0.78rem;">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s['grade'] %}
+                <span class="pill badge-green"><i class="bi bi-check-circle me-1"></i>{{ s['grade'] }}</span>
+              {% else %}
+                <span class="pill badge-amber"><i class="bi bi-hourglass-split me-1"></i>Pending</span>
+              {% endif %}
+            </td>
+            <td class="feedback-cell" title="{{ s['feedback'] or '' }}">
+              {{ s['feedback'] or '—' }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="empty-icon">📭</div>
+      <h3>No submissions yet</h3>
+      <p>Submit your first assignment to track grades here.</p>
+      <a href="{{ url_for('submit_assignment') }}" class="btn-primary-dark">
+        <i class="bi bi-cloud-arrow-up"></i> Submit Assignment
+      </a>
+    </div>
+  {% endif %}
+</div>
+
+{% endblock %}

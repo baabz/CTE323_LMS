@@ -1,0 +1,45 @@
+# ── Python ────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# ── Virtual environments ───────────────────────────────
+venv/
+env/
+.venv/
+ENV/
+
+# ── Flask / App secrets ────────────────────────────────
+.env
+*.env
+instance/
+
+# ── Database  (local data — NOT for version control) ──
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Uploaded user files ────────────────────────────────
+uploads/
+static/uploads/
+
+# ── OS junk ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE / editor ──────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+
+# ── Logs ──────────────────────────────────────────────
+*.log
+logs/

@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Create Assignment Task{% endblock %}
+
+{% block extra_head %}
+<style>
+  .form-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 18px; overflow: hidden; max-width: 600px; margin: 0 auto;
+  }
+  .form-header {
+    text-align: center; padding: 2rem 2rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .form-header-icon {
+    width: 60px; height: 60px; border-radius: 14px;
+    background: rgba(139,92,246,0.12); color: #a78bfa;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.7rem; margin: 0 auto 0.9rem;
+  }
+  .form-header h1 { font-size: 1.25rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+  .form-header p  { color: var(--text-secondary); font-size: 0.83rem; margin: 0.3rem 0 0; }
+  .form-body { padding: 1.75rem 2rem 2rem; display: flex; flex-direction: column; gap: 1.25rem; }
+
+  .btn-row { display: flex; gap: 1rem; margin-top: 0.5rem; }
+  .btn-cancel { flex:1; background:rgba(30,41,59,0.6); color:var(--text-secondary); border:1px solid var(--border); border-radius:10px; padding:0.8rem; font-weight:600; font-size:0.9rem; font-family:'Inter',sans-serif; cursor:pointer; text-align:center; transition:all 0.2s; }
+  .btn-cancel:hover { color:var(--text-primary); }
+  .btn-create { flex:1; background:linear-gradient(135deg,#8b5cf6,#7c3aed); color:#fff; border:none; border-radius:10px; padding:0.8rem; font-weight:600; font-size:0.9rem; font-family:'Inter',sans-serif; cursor:pointer; transition:all 0.22s; }
+  .btn-create:hover { transform:translateY(-2px); box-shadow:0 8px 24px rgba(139,92,246,0.3); }
+
+  .hint { font-size: 0.74rem; color: var(--text-muted); margin-top: 0.3rem; }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="form-card">
+  <div class="form-header">
+    <div class="form-header-icon"><i class="bi bi-calendar-plus"></i></div>
+    <h1>Create Assignment Task</h1>
+    <p>Students will select this task when submitting their work</p>
+  </div>
+
+  <div class="form-body">
+    <form action="{{ url_for('create_task') }}" method="POST" novalidate>
+
+      <div>
+        <label class="form-label-dark" for="title">Task Title</label>
+        <input type="text" class="input-dark" id="title" name="title"
+               placeholder='e.g. "Lab 3 — Loops and Functions"' maxlength="150" required>
+      </div>
+
+      <div>
+        <label class="form-label-dark" for="description">Description <span style="opacity:0.5;font-weight:400;text-transform:none;">(optional)</span></label>
+        <textarea class="input-dark" id="description" name="description" rows="3"
+                  placeholder="Briefly describe what students should submit..."
+                  style="resize:vertical;"></textarea>
+      </div>
+
+      <div>
+        <label class="form-label-dark" for="due_date">Submission Deadline</label>
+        <input type="datetime-local" class="input-dark" id="due_date" name="due_date" required>
+        <p class="hint">
+          <i class="bi bi-info-circle me-1"></i>
+          Submissions after this time will be flagged as <strong style="color:#f87171;">LATE</strong> automatically.
+        </p>
+      </div>
+
+      <div class="btn-row">
+        <a href="{{ url_for('manage_tasks') }}" class="btn-cancel">Cancel</a>
+        <button type="submit" class="btn-create">
+          <i class="bi bi-calendar-check me-1"></i> Create Task
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Default the datetime-local to tomorrow at 23:59
+  const dueDateInput = document.getElementById('due_date');
+  if (dueDateInput && !dueDateInput.value) {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(23, 59, 0, 0);
+    // Format: YYYY-MM-DDTHH:MM
+    const pad = n => String(n).padStart(2, '0');
+    dueDateInput.value = `${tomorrow.getFullYear()}-${pad(tomorrow.getMonth()+1)}-${pad(tomorrow.getDate())}T${pad(tomorrow.getHours())}:${pad(tomorrow.getMinutes())}`;
+  }
+</script>
+{% endblock %}

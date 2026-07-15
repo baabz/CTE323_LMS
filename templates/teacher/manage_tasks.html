@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% block title %}Assignment Tasks{% endblock %}
+
+{% block extra_head %}
+<style>
+  .tasks-grid { display: flex; flex-direction: column; gap: 1rem; }
+
+  .task-card {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.4rem 1.6rem;
+    display: flex; align-items: center; gap: 1.25rem;
+    flex-wrap: wrap; transition: border-color 0.2s;
+  }
+  .task-card:hover { border-color: rgba(255,255,255,0.12); }
+  .task-card.is-closed { opacity: 0.6; }
+
+  .task-icon {
+    width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center; font-size: 1.3rem;
+  }
+  .task-main { flex: 1; min-width: 0; }
+  .task-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.2rem; }
+  .task-desc  { font-size: 0.8rem; color: var(--text-secondary); margin: 0; }
+  .task-meta  { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.6rem; align-items: center; }
+  .task-meta-item { font-size: 0.76rem; color: var(--text-muted); display: flex; align-items: center; gap: 0.3rem; }
+
+  .deadline-late   { color: #f87171 !important; font-weight: 700; }
+  .deadline-soon   { color: #fbbf24 !important; font-weight: 700; }
+  .deadline-ok     { color: #34d399 !important; }
+
+  .task-actions { display: flex; gap: 0.6rem; flex-wrap: wrap; }
+  .btn-toggle-open   { background: rgba(16,185,129,0.1); color: #34d399; border: 1px solid rgba(16,185,129,0.2); border-radius: 8px; padding: 0.38rem 0.9rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family:'Inter',sans-serif; transition: all .2s; }
+  .btn-toggle-open:hover   { background: rgba(16,185,129,0.2); }
+  .btn-toggle-close  { background: rgba(245,158,11,0.1); color: #fbbf24; border: 1px solid rgba(245,158,11,0.2); border-radius: 8px; padding: 0.38rem 0.9rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family:'Inter',sans-serif; transition: all .2s; }
+  .btn-toggle-close:hover  { background: rgba(245,158,11,0.2); }
+  .btn-view-subs { background: rgba(59,130,246,0.1); color: #60a5fa; border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 0.38rem 0.9rem; font-size: 0.78rem; font-weight: 600; transition: all .2s; }
+  .btn-view-subs:hover { background: rgba(59,130,246,0.2); }
+  .btn-delete-task { background: rgba(239,68,68,0.1); color: #f87171; border: 1px solid rgba(239,68,68,0.2); border-radius: 8px; padding: 0.38rem 0.9rem; font-size: 0.78rem; font-weight: 600; cursor: pointer; font-family:'Inter',sans-serif; transition: all .2s; }
+  .btn-delete-task:hover   { background: rgba(239,68,68,0.2); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <div>
+    <h1><i class="bi bi-calendar-check me-2" style="color:#a78bfa;"></i>Assignment Tasks</h1>
+    <p>Create named tasks with deadlines — students submit against them</p>
+  </div>
+  <a href="{{ url_for('create_task') }}" class="btn-primary-dark">
+    <i class="bi bi-plus-circle"></i> New Task
+  </a>
+</div>
+
+{% if tasks %}
+  <div class="tasks-grid">
+    {% for task in tasks %}
+    {% set is_late = task['due_date'] < now.strftime('%Y-%m-%dT%H:%M') %}
+    <div class="task-card {{ 'is-closed' if not task['is_open'] else '' }}">
+
+      <div class="task-icon {{ 'badge-green' if task['is_open'] and not is_late else 'badge-red' if is_late else 'badge-amber' }}">
+        <i class="bi bi-{{ 'check2-circle' if not task['is_open'] else 'hourglass-split' if is_late else 'calendar3' }}"></i>
+      </div>
+
+      <div class="task-main">
+        <div class="task-title">{{ task['title'] }}</div>
+        {% if task['description'] %}
+          <div class="task-desc">{{ task['description'] }}</div>
+        {% endif %}
+        <div class="task-meta">
+          <span class="task-meta-item {{ 'deadline-late' if is_late else 'deadline-soon' if not task['is_open'] else 'deadline-ok' }}">
+            <i class="bi bi-clock"></i>
+            Due: {{ task['due_date'].replace('T', ' ') }}
+            {% if is_late %}<span style="margin-left:4px;">(PAST)</span>{% endif %}
+          </span>
+          <span class="task-meta-item">
+            <i class="bi bi-people"></i> {{ task['submission_count'] }} submission{{ 's' if task['submission_count'] != 1 else '' }}
+          </span>
+          <span class="task-meta-item">
+            <span class="pill {{ 'badge-green' if task['is_open'] else 'badge-red' }}">
+              {{ 'Open' if task['is_open'] else 'Closed' }}
+            </span>
+          </span>
+        </div>
+      </div>
+
+      <div class="task-actions">
+        <a href="{{ url_for('task_submissions', task_id=task['id']) }}" class="btn-view-subs">
+          <i class="bi bi-inbox me-1"></i>Submissions
+        </a>
+
+        <form action="{{ url_for('toggle_task', task_id=task['id']) }}" method="POST" style="display:inline;">
+          {% if task['is_open'] %}
+            <button type="submit" class="btn-toggle-close" title="Close this task">
+              <i class="bi bi-lock me-1"></i>Close
+            </button>
+          {% else %}
+            <button type="submit" class="btn-toggle-open" title="Re-open this task">
+              <i class="bi bi-unlock me-1"></i>Open
+            </button>
+          {% endif %}
+        </form>
+
+        <form action="{{ url_for('delete_task', task_id=task['id']) }}" method="POST" style="display:inline;"
+              onsubmit="return confirm('Delete task \'{{ task['title'] }}\'? This cannot be undone.')">
+          <button type="submit" class="btn-delete-task"><i class="bi bi-trash"></i></button>
+        </form>
+      </div>
+
+    </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <div class="empty-icon">📋</div>
+    <h3>No tasks yet</h3>
+    <p>Create your first assignment task to give students clear deadlines.</p>
+    <a href="{{ url_for('create_task') }}" class="btn-primary-dark">
+      <i class="bi bi-plus-circle"></i> Create First Task
+    </a>
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Pass now timestamp to Jinja2 for deadline comparison
+  // (already handled server-side via the `now` variable)
+</script>
+{% endblock %}

@@ -1,0 +1,797 @@
+{#
+  base.html — Master Layout Template (v3)
+  =========================================
+  v3 changes:
+    - Replaced top navbar with a fixed left SIDEBAR for logged-in users
+    - Public pages (portfolio, login, register, showcase) are unaffected
+    - Sidebar shows role-specific nav links + profile avatar
+    - Dark theme applied globally to all portal pages
+    - Mobile: sidebar off-canvas with hamburger toggle
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}CTE323 Portal{% endblock %} | Kaduna Polytechnic</title>
+  <meta name="description" content="CTE323 Python Programming Language — HND Computer Engineering Course Portal | Kaduna Polytechnic">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+  <style>
+    /* =========================================================================
+       BASE VARIABLES & RESET
+       ========================================================================= */
+    :root {
+      --sidebar-w:      260px;
+      --bg-base:        #0f172a;
+      --bg-surface:     #1e293b;
+      --bg-hover:       rgba(255,255,255,0.05);
+      --border:         rgba(255,255,255,0.07);
+      --text-primary:   #f1f5f9;
+      --text-secondary: #8492a6;
+      --text-muted:     #627288;
+      --accent-blue:    #3b82f6;
+      --accent-purple:  #8b5cf6;
+      --accent-amber:   #f59e0b;
+      --accent-green:   #10b981;
+    }
+
+    /* Custom elegant dark scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--bg-base);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    /* Smooth page element selections */
+    ::selection {
+      background: rgba(99, 102, 241, 0.35);
+      color: #fff;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-base);
+      color: var(--text-primary);
+      min-height: 100vh;
+      animation: pageIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+      overflow-x: hidden;
+    }
+    body.slide-out { animation: pageOut 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes pageIn  { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pageOut { to   { opacity:0; transform:translateY(-12px); } }
+
+    a { 
+      text-decoration: none; 
+      color: inherit;
+      transition: color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    h1,h2,h3,h4,h5 { font-family: 'Outfit', sans-serif; }
+
+    /* Click ripple styling */
+    .ripple-element {
+      position: relative;
+      overflow: hidden;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    .ripple-wave {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.18);
+      transform: scale(0);
+      animation: ripple-effect 0.5s cubic-bezier(0.1, 0.8, 0.3, 1);
+      pointer-events: none;
+    }
+    @keyframes ripple-effect {
+      to {
+        transform: scale(4);
+        opacity: 0;
+      }
+    }
+
+    /* =========================================================================
+       SIDEBAR
+       ========================================================================= */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: var(--bg-surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      z-index: 200;
+      transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+
+    /* Brand / Logo area */
+    .sidebar-brand {
+      padding: 1.5rem 1.25rem 1rem;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-brand .brand-label {
+      display: flex; align-items: center; gap: 0.6rem;
+    }
+    .sidebar-brand .brand-badge {
+      background: var(--accent-amber);
+      color: #1e293b;
+      font-family: 'Outfit', sans-serif;
+      font-weight: 800; font-size: 0.7rem;
+      padding: 3px 8px; border-radius: 6px;
+      letter-spacing: 0.05em;
+    }
+    .sidebar-brand .brand-name {
+      font-family: 'Outfit', sans-serif;
+      font-weight: 700; font-size: 0.95rem;
+      color: var(--text-primary);
+    }
+
+    /* Profile area inside sidebar */
+    .sidebar-profile {
+      padding: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 0.85rem;
+      flex-shrink: 0;
+    }
+    .sidebar-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      object-fit: cover; flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+    .sidebar-avatar-placeholder {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; color: #fff;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+    }
+    .sidebar-profile-info { flex: 1; min-width: 0; }
+    .sidebar-profile-name {
+      font-weight: 600; font-size: 0.88rem;
+      color: var(--text-primary);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .sidebar-role-badge {
+      font-size: 0.68rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.05em;
+      padding: 2px 8px; border-radius: 20px;
+      display: inline-block; margin-top: 3px;
+    }
+    .sidebar-role-badge.admin       { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+    .sidebar-role-badge.sub_teacher { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+    .sidebar-role-badge.student     { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+    /* Announcement unread badge — red dot on the bell icon */
+    .announce-badge {
+      margin-left: auto;
+      background: #ef4444;
+      color: #fff;
+      font-size: 0.62rem; font-weight: 800;
+      padding: 2px 6px; border-radius: 20px;
+      animation: pulse-badge 1.8s ease-in-out infinite;
+    }
+    @keyframes pulse-badge {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.55; }
+    }
+
+    /* Nav sections */
+    .sidebar-nav {
+      flex: 1;
+      padding: 1rem 0.75rem;
+      display: flex; flex-direction: column; gap: 0.25rem;
+    }
+    .sidebar-section-label {
+      font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: var(--text-muted);
+      padding: 0.5rem 0.6rem 0.3rem;
+      margin-top: 0.5rem;
+    }
+    .sidebar-link {
+      display: flex; align-items: center; gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: 10px;
+      font-size: 0.88rem; font-weight: 500;
+      color: var(--text-secondary);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .sidebar-link i { font-size: 1.05rem; flex-shrink: 0; transition: transform 0.25s ease; }
+    .sidebar-link:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+    .sidebar-link:hover i {
+      transform: translateX(2px);
+    }
+    .sidebar-link::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 20%; bottom: 20%; width: 3px;
+      background: #60a5fa;
+      border-radius: 0 4px 4px 0;
+      transform: scaleY(0);
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .sidebar-link.active::before {
+      transform: scaleY(1);
+    }
+    .sidebar-link.active {
+      background: rgba(59, 130, 246, 0.12);
+      color: #60a5fa;
+      font-weight: 600;
+    }
+    .sidebar-link .badge-count {
+      margin-left: auto;
+      background: rgba(239,68,68,0.2);
+      color: #f87171;
+      font-size: 0.68rem; font-weight: 700;
+      padding: 2px 7px; border-radius: 20px;
+    }
+
+    /* Logout at bottom */
+    .sidebar-footer {
+      padding: 1rem 0.75rem;
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+    .sidebar-footer .sidebar-link { color: #ef4444; }
+    .sidebar-footer .sidebar-link:hover { background: rgba(239,68,68,0.1); color: #f87171; }
+
+    /* =========================================================================
+       MAIN CONTENT AREA
+       ========================================================================= */
+    .page-wrapper {
+      margin-left: var(--sidebar-w);
+      min-height: 100vh;
+      display: flex; flex-direction: column;
+    }
+
+    /* Mobile top bar (hamburger) — hidden on desktop */
+    .mobile-topbar {
+      display: none;
+      position: sticky; top: 0; z-index: 100;
+      background: var(--bg-surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.25rem;
+      align-items: center; justify-content: space-between;
+    }
+    .mobile-topbar .brand-name { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1rem; }
+    .hamburger-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text-secondary); font-size: 1.4rem;
+      padding: 0.25rem;
+      transition: color 0.2s;
+    }
+    .hamburger-btn:hover { color: var(--text-primary); }
+
+    /* Overlay for mobile sidebar */
+    .sidebar-overlay {
+      display: none;
+      position: fixed; inset: 0; z-index: 190;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+    }
+    .sidebar-overlay.active { display: block; }
+
+    /* =========================================================================
+       CONTENT
+       ========================================================================= */
+    .main-content {
+      flex: 1;
+      padding: 2rem;
+      max-width: 1400px;
+      width: 100%;
+    }
+
+    /* Flash messages */
+    .flash-area { padding: 0 2rem; padding-top: 1.25rem; }
+    .flash-msg {
+      border-radius: 10px;
+      padding: 0.8rem 1.1rem;
+      font-size: 0.88rem;
+      display: flex; align-items: center; gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+    .flash-msg.success { background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.25); color: #34d399; }
+    .flash-msg.danger  { background: rgba(239,68,68,0.12);  border: 1px solid rgba(239,68,68,0.25);  color: #f87171; }
+    .flash-msg.warning { background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25); color: #fbbf24; }
+    .flash-msg.info    { background: rgba(59,130,246,0.12); border: 1px solid rgba(59,130,246,0.25); color: #60a5fa; }
+
+    /* Footer */
+    footer {
+      padding: 1.25rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.78rem;
+    }
+
+    /* =========================================================================
+       MOBILE RESPONSIVE
+       ========================================================================= */
+    @media (max-width: 900px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .page-wrapper { margin-left: 0; }
+      .mobile-topbar { display: flex; }
+      .main-content { padding: 1.25rem; }
+    }
+
+    /* =========================================================================
+       SHARED COMPONENT STYLES (used across student + teacher templates)
+       ========================================================================= */
+
+    /* Cards */
+    .dark-card {
+      background: rgba(30,41,59,0.45);
+      backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .dark-card:hover { 
+      border-color: rgba(99, 102, 241, 0.35); 
+      transform: translateY(-2px);
+      box-shadow: 0 12px 20px -10px rgba(99, 102, 241, 0.15), 0 4px 12px -5px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Tables */
+    .dark-table th {
+      background: rgba(15,23,42,0.5);
+      color: var(--text-muted);
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .dark-table td {
+      padding: 0.9rem 1.25rem;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-size: 0.88rem; color: #cbd5e1; vertical-align: middle;
+    }
+    .dark-table tbody tr:hover { background: rgba(255,255,255,0.03); }
+    .dark-table tbody tr:last-child td { border-bottom: none; }
+
+    /* Badges */
+    .badge-green  { background: rgba(16,185,129,0.15); color: #34d399; }
+    .badge-amber  { background: rgba(245,158,11,0.15);  color: #fbbf24; }
+    .badge-red    { background: rgba(239,68,68,0.15);   color: #f87171; }
+    .badge-blue   { background: rgba(59,130,246,0.15);  color: #60a5fa; }
+    .badge-purple { background: rgba(139,92,246,0.15);  color: #a78bfa; }
+    .pill {
+      font-size: 0.72rem; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+      display: inline-block;
+    }
+
+    /* Buttons */
+    .btn-primary-dark {
+      background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+      color: #fff; border: none; border-radius: 10px;
+      padding: 0.7rem 1.4rem; font-weight: 600; font-size: 0.88rem;
+      cursor: pointer; 
+      transition: background 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s, color 0.2s;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none;
+    }
+    .btn-primary-dark:hover { 
+      transform: translateY(-2px); 
+      box-shadow: 0 6px 20px rgba(59, 130, 246, 0.25); 
+      color: #fff; 
+    }
+    .btn-primary-dark:active {
+      transform: translateY(0) scale(0.96);
+    }
+
+    .btn-ghost {
+      background: transparent; color: var(--text-secondary);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.65rem 1.2rem; font-weight: 600; font-size: 0.85rem;
+      cursor: pointer; 
+      transition: border-color 0.2s, color 0.2s, background-color 0.2s, transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      text-decoration: none;
+    }
+    .btn-ghost:hover { 
+      border-color: var(--text-secondary); 
+      color: var(--text-primary); 
+      background-color: rgba(255, 255, 255, 0.02);
+    }
+    .btn-ghost:active {
+      transform: scale(0.96);
+    }
+
+    /* Page header pattern */
+    .page-header {
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;
+    }
+    .page-header h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+    .page-header p  { color: var(--text-secondary); font-size: 0.85rem; margin: 0.2rem 0 0; }
+
+    /* KPI grid */
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .kpi {
+      background: rgba(30,41,59,0.5);
+      border: 1px solid var(--border);
+      border-radius: 14px; padding: 1.25rem 1.5rem;
+      display: flex; align-items: center; gap: 1rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+    .kpi:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.12); }
+    .kpi-icon {
+      width: 46px; height: 46px; border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; flex-shrink: 0;
+    }
+    .kpi-value { font-size: 1.9rem; font-weight: 800; line-height: 1; color: var(--text-primary); }
+    .kpi-label { font-size: 0.75rem; color: var(--text-secondary); font-weight: 500; margin-top: 2px; }
+
+    /* Input styling shared */
+    .input-dark {
+      width: 100%; background: rgba(15,23,42,0.6);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 0.8rem 1rem; color: var(--text-primary);
+      font-size: 0.9rem; font-family: 'Inter', sans-serif;
+      transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+    }
+    .input-dark::placeholder { color: var(--text-muted); }
+    .input-dark:focus { border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.12); }
+
+    .form-label-dark {
+      color: var(--text-secondary); font-size: 0.78rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 0.45rem; display: block;
+    }
+
+    /* Empty state */
+    .empty-state { text-align: center; padding: 4rem 1rem; }
+    .empty-state .empty-icon { font-size: 3rem; opacity: 0.2; margin-bottom: 1rem; }
+    .empty-state h3 { color: #94a3b8; font-size: 1rem; font-weight: 600; margin-bottom: 0.4rem; }
+    .empty-state p  { color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 1.5rem; }
+  </style>
+
+  {% block extra_head %}{% endblock %}
+</head>
+
+<body>
+
+  {% if session.get('user_id') %}
+  {# ===================================================================
+     SIDEBAR — only rendered for logged-in users
+     =================================================================== #}
+
+  {# Mobile overlay #}
+  <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+  <aside class="sidebar" id="sidebar">
+
+    {# Brand #}
+    <div class="sidebar-brand">
+      <div class="brand-label">
+        <span class="brand-badge">CTE323</span>
+        <span class="brand-name">Python Programming Language</span>
+      </div>
+    </div>
+
+    {# Profile mini card #}
+    <div class="sidebar-profile">
+      {% if session.get('profile_pic') %}
+        <img src="{{ url_for('serve_profile_pic', filename=session['profile_pic']) }}"
+             alt="Profile" class="sidebar-avatar">
+      {% else %}
+        <div class="sidebar-avatar-placeholder">
+          {{ (session.get('full_name') or session.get('username') or 'U')[0] | upper }}
+        </div>
+      {% endif %}
+      <div class="sidebar-profile-info">
+        <div class="sidebar-profile-name">
+          {{ session.get('full_name') or session.get('username') }}
+        </div>
+        <span class="sidebar-role-badge {{ session.get('role') }}">
+          {{ session.get('role') | replace('_', ' ') }}
+        </span>
+      </div>
+    </div>
+
+    {# Navigation links — role-based #}
+    <nav class="sidebar-nav">
+
+      {# ---- ADMIN (Lead Lecturer) ---- #}
+      {% if session.get('role') == 'admin' %}
+
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{{ url_for('admin_dashboard') }}" class="sidebar-link">
+          <i class="bi bi-speedometer2"></i> Dashboard
+        </a>
+
+        <div class="sidebar-section-label">Course</div>
+        <a href="{{ url_for('upload_handout') }}" class="sidebar-link">
+          <i class="bi bi-upload"></i> Upload Handout
+        </a>
+        <a href="{{ url_for('teacher_handouts') }}" class="sidebar-link">
+          <i class="bi bi-journal-text"></i> Manage Handouts
+        </a>
+        <a href="{{ url_for('view_submissions') }}" class="sidebar-link">
+          <i class="bi bi-inbox"></i> Submissions
+        </a>
+        <a href="{{ url_for('manage_tasks') }}" class="sidebar-link">
+          <i class="bi bi-calendar-check"></i> Assignment Tasks
+        </a>
+        <a href="{{ url_for('teacher_attendance') }}" class="sidebar-link">
+          <i class="bi bi-clipboard-check"></i> Attendance
+        </a>
+
+        <div class="sidebar-section-label">Publish</div>
+        <a href="{{ url_for('manage_announcements') }}" class="sidebar-link">
+          <i class="bi bi-bell"></i> Announcements
+        </a>
+        <a href="{{ url_for('post_to_feed') }}" class="sidebar-link">
+          <i class="bi bi-megaphone"></i> Post to Feed
+        </a>
+        <a href="{{ url_for('index') }}" class="sidebar-link">
+          <i class="bi bi-broadcast"></i> Class Feed
+        </a>
+
+        <div class="sidebar-section-label">Admin</div>
+        <a href="{{ url_for('manage_staff') }}" class="sidebar-link">
+          <i class="bi bi-people"></i> Manage Staff
+        </a>
+
+      {# ---- SUB-TEACHER ---- #}
+      {% elif session.get('role') == 'sub_teacher' %}
+
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{{ url_for('sub_teacher_dashboard') }}" class="sidebar-link">
+          <i class="bi bi-house"></i> Dashboard
+        </a>
+
+        <div class="sidebar-section-label">Course</div>
+        <a href="{{ url_for('upload_handout') }}" class="sidebar-link">
+          <i class="bi bi-upload"></i> Upload Handout
+        </a>
+        <a href="{{ url_for('teacher_handouts') }}" class="sidebar-link">
+          <i class="bi bi-journal-text"></i> Handouts
+        </a>
+        <a href="{{ url_for('post_to_feed') }}" class="sidebar-link">
+          <i class="bi bi-megaphone"></i> Post to Feed
+        </a>
+        <a href="{{ url_for('index') }}" class="sidebar-link">
+          <i class="bi bi-broadcast"></i> Class Feed
+        </a>
+
+      {# ---- STUDENT ---- #}
+      {% else %}
+
+        <div class="sidebar-section-label">Overview</div>
+        <a href="{{ url_for('student_dashboard') }}" class="sidebar-link">
+          <i class="bi bi-house"></i> Dashboard
+        </a>
+
+        <div class="sidebar-section-label">Coursework</div>
+                <a href="{{ url_for('student_attendance_view') }}" class="sidebar-link">
+                  <i class="bi bi-clipboard-check"></i> Attendance
+                </a>
+        <a href="{{ url_for('student_handouts') }}" class="sidebar-link">
+          <i class="bi bi-journal-arrow-down"></i> Handouts
+        </a>
+        <a href="{{ url_for('submit_assignment') }}" class="sidebar-link">
+          <i class="bi bi-filetype-py"></i> Submit Assignment
+        </a>
+        <a href="{{ url_for('my_submissions') }}" class="sidebar-link">
+          <i class="bi bi-list-check"></i> My Submissions
+        </a>
+
+        <div class="sidebar-section-label">Account</div>
+        <a href="{{ url_for('student_announcements') }}" class="sidebar-link" id="announce-link">
+          <i class="bi bi-bell"></i> Announcements
+          {# data-unread is read by JS to decide whether to show the badge #}
+          <span class="announce-badge" id="announce-badge"
+                data-unread="{{ session.get('_announce_unread', 0) }}"
+                style="display:none;"></span>
+        </a>
+        <a href="{{ url_for('student_profile') }}" class="sidebar-link">
+          <i class="bi bi-person-circle"></i> My Profile
+        </a>
+        <a href="{{ url_for('index') }}" class="sidebar-link">
+          <i class="bi bi-broadcast"></i> Class Feed
+        </a>
+
+      {% endif %}
+
+    </nav>
+
+    {# Logout #}
+    <div class="sidebar-footer">
+      <a href="{{ url_for('logout') }}" class="sidebar-link">
+        <i class="bi bi-box-arrow-left"></i> Logout
+      </a>
+    </div>
+
+  </aside>
+
+  {# ===================================================================
+     PAGE WRAPPER — content sits next to the sidebar
+     =================================================================== #}
+  <div class="page-wrapper">
+
+    {# Mobile top bar #}
+    <div class="mobile-topbar">
+      <span class="brand-name">CTE323 — Python Programming</span>
+      <button class="hamburger-btn" id="hamburger-btn" aria-label="Open menu">
+        <i class="bi bi-list"></i>
+      </button>
+    </div>
+
+    {# Flash messages #}
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        <div class="flash-area">
+          {% for category, message in messages %}
+            <div class="flash-msg {{ category }}">
+              {% if category == 'success' %}<i class="bi bi-check-circle-fill"></i>
+              {% elif category == 'danger' %}<i class="bi bi-exclamation-triangle-fill"></i>
+              {% else %}<i class="bi bi-info-circle-fill"></i>{% endif %}
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+      <strong style="color:#94a3b8;">CTE323 — Python Programming Language</strong>
+      &nbsp;|&nbsp; Kaduna Polytechnic &nbsp;|&nbsp; Academic Year 2025/2026
+    </footer>
+
+  </div>
+
+  {% else %}
+  {# ===================================================================
+     GUEST LAYOUT — no sidebar, just full-width content
+     (login, register, portfolio, showcase pages)
+     =================================================================== #}
+  <div style="min-height:100vh;">
+    {% with messages = get_flashed_messages(with_categories=True) %}
+      {% if messages %}
+        <div style="position:fixed;top:1rem;left:50%;transform:translateX(-50%);z-index:999;width:90%;max-width:420px;">
+          {% for category, message in messages %}
+            <div class="flash-msg {{ category }}" style="background:rgba(30,41,59,0.95);backdrop-filter:blur(10px);">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block guest_content %}{% endblock %}
+  </div>
+  {% endif %}
+
+  {# Page transition + sidebar toggle script #}
+  <script>
+    // --- Sidebar toggle (mobile) ---
+    const sidebar  = document.getElementById('sidebar');
+    const overlay  = document.getElementById('sidebar-overlay');
+    const hamburger = document.getElementById('hamburger-btn');
+
+    if (hamburger) {
+      hamburger.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        overlay.classList.toggle('active');
+      });
+      overlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+      });
+    }
+
+    // --- Active link highlight ---
+    const currentPath = window.location.pathname;
+    document.querySelectorAll('.sidebar-link').forEach(link => {
+      if (link.getAttribute('href') === currentPath) {
+        link.classList.add('active');
+      }
+    });
+
+    // --- Page transition ---
+    document.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (!href || href.startsWith('#') || this.target === '_blank' ||
+            this.hostname !== window.location.hostname) return;
+        e.preventDefault();
+        document.body.classList.add('slide-out');
+        setTimeout(() => { window.location.href = this.href; }, 300);
+      });
+    });
+
+    // --- Announcement unread badge (student only) ---
+    (function() {
+      const badge  = document.getElementById('announce-badge');
+      if (!badge) return;  // Not a student page
+
+      // The server stores last_seen_announcement_id in Flask session.
+      // We pass the latest ID as a data attribute on the badge's parent link.
+      // If the server says there are unread ones, show the badge.
+      const unread = parseInt(badge.dataset.unread || '0', 10);
+      if (unread > 0) {
+        badge.textContent = unread > 9 ? '9+' : unread;
+        badge.style.display = 'inline-block';
+      }
+
+      // When clicking the announcements link, hide the badge immediately
+      const announceLink = document.getElementById('announce-link');
+      if (announceLink) {
+        announceLink.addEventListener('click', () => {
+          badge.style.display = 'none';
+        });
+      }
+    })();
+
+    // --- Interactive Ripple Effect ---
+    document.addEventListener('click', function(e) {
+      // Find element with ripple capability
+      const target = e.target.closest('.btn-primary-dark, .btn-ghost, .sidebar-link, .dark-card, .kpi');
+      if (!target) return;
+
+      // Add ripple class wrapper if not present
+      if (!target.classList.contains('ripple-element')) {
+        target.classList.add('ripple-element');
+      }
+
+      const rect = target.getBoundingClientRect();
+      const wave = document.createElement('span');
+      wave.classList.add('ripple-wave');
+
+      // Calculate coordinates relative to container
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      wave.style.left = x + 'px';
+      wave.style.top = y + 'px';
+
+      // Set dimensions of the ripple based on target size
+      const maxDim = Math.max(rect.width, rect.height);
+      wave.style.width = maxDim + 'px';
+      wave.style.height = maxDim + 'px';
+      wave.style.marginTop = -(maxDim / 2) + 'px';
+      wave.style.marginLeft = -(maxDim / 2) + 'px';
+
+      // Append and remove after animation
+      target.appendChild(wave);
+      wave.addEventListener('animationend', () => {
+        wave.remove();
+      });
+    });
+  </script>
+
+  {% block extra_scripts %}{% endblock %}
+</body>
+</html>

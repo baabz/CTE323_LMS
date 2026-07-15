@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Welcome banner */
+  .welcome-banner {
+    background: rgba(30,41,59,0.5); border: 1px solid var(--border);
+    border-radius: 16px; padding: 1.75rem 2rem; margin-bottom: 1.75rem;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .welcome-banner .greeting { font-size: 0.8rem; color: var(--text-secondary); margin-bottom: 0.25rem; }
+  .welcome-banner h1 { font-size: 1.5rem; font-weight: 800; color: var(--text-primary); margin: 0; }
+  .welcome-banner h1 span { color: #60a5fa; }
+
+  /* Two-col layout */
+  .dash-grid { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; }
+  @media (max-width: 900px) { .dash-grid { grid-template-columns: 1fr; } }
+
+  /* Action tiles */
+  .actions-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+  @media (max-width: 600px) { .actions-grid { grid-template-columns: 1fr; } }
+  .action-tile {
+    background: rgba(30,41,59,0.4); border: 1px solid var(--border);
+    border-radius: 14px; padding: 1.25rem;
+    display: flex; align-items: center; gap: 0.9rem;
+    transition: all 0.22s; color: inherit !important;
+  }
+  .action-tile:hover { border-color: rgba(59,130,246,0.35); background: rgba(59,130,246,0.06); transform: translateY(-2px); }
+  .tile-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; flex-shrink: 0; }
+  .action-tile h2 { font-size: 0.88rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .action-tile p  { font-size: 0.75rem; color: var(--text-secondary); margin: 0.1rem 0 0; }
+
+  /* Sidebar panel (right col) */
+  .side-panel { display: flex; flex-direction: column; gap: 1.25rem; }
+  .panel-card { background: rgba(30,41,59,0.5); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+  .panel-head {
+    padding: 0.9rem 1.2rem; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-head h3 { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .panel-head a { font-size: 0.74rem; color: #60a5fa; font-weight: 600; }
+
+  /* Announcement items */
+  .ann-item { padding: 0.9rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .ann-item:last-child { border-bottom: none; }
+  .ann-title { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.2rem; }
+  .ann-meta  { font-size: 0.72rem; color: var(--text-muted); }
+  .ann-item.pinned { background: rgba(245,158,11,0.04); border-left: 2px solid #fbbf24; padding-left: 1rem; }
+  .ann-item.is-new  { border-left: 2px solid var(--accent-blue); padding-left: 1rem; }
+
+  /* Deadline countdown */
+  .deadline-item { padding: 0.9rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.04); }
+  .deadline-item:last-child { border-bottom: none; }
+  .deadline-name { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); margin: 0 0 0.3rem; }
+  .deadline-due  { font-size: 0.72rem; display: flex; align-items: center; gap: 0.3rem; }
+  .countdown     { font-size: 0.7rem; font-weight: 700; padding: 2px 8px; border-radius: 12px; margin-left: auto; }
+
+  /* Submissions panel */
+  .panel-header {
+    padding: 1.1rem 1.4rem; border-bottom: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .panel-header h2 { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+  .view-all-link { display: block; text-align: center; padding: 0.9rem; border-top: 1px solid var(--border); color: #60a5fa; font-weight: 600; font-size: 0.82rem; }
+  .view-all-link:hover { background: rgba(255,255,255,0.03); }
+</style>
+{% endblock %}
+
+{% block content %}
+
+{# Welcome Banner #}
+<div class="welcome-banner">
+  <div>
+    <div class="greeting">CTE323 — Python Programming Language</div>
+    <h1>Welcome, <span>{{ session.get('full_name') or session.get('username') }}</span></h1>
+  </div>
+  <a href="{{ url_for('submit_assignment') }}" class="btn-primary-dark">
+    <i class="bi bi-cloud-arrow-up"></i> Submit Assignment
+  </a>
+</div>
+
+{# KPI Stats #}
+{% set graded = submissions | selectattr('grade') | list %}
+<div class="kpi-grid" style="margin-bottom:1.5rem;">
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(59,130,246,0.12);color:#60a5fa;"><i class="bi bi-file-earmark-text"></i></div>
+    <div><div class="kpi-value">{{ handout_count }}</div><div class="kpi-label">Handouts</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(139,92,246,0.12);color:#a78bfa;"><i class="bi bi-send-check"></i></div>
+    <div><div class="kpi-value">{{ submissions|length }}</div><div class="kpi-label">Submissions</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(16,185,129,0.12);color:#34d399;"><i class="bi bi-patch-check"></i></div>
+    <div><div class="kpi-value">{{ graded|length }}</div><div class="kpi-label">Graded</div></div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-icon" style="background:rgba(245,158,11,0.12);color:#fbbf24;"><i class="bi bi-calendar-check"></i></div>
+    <div><div class="kpi-value">{{ open_tasks|length }}</div><div class="kpi-label">Open Tasks</div></div>
+  </div>
+</div>
+
+{# Main two-column layout #}
+<div class="dash-grid">
+
+  {# Left column: quick actions + recent submissions #}
+  <div>
+    <div class="actions-grid">
+      <a href="{{ url_for('student_handouts') }}" class="action-tile">
+        <div class="tile-icon" style="background:rgba(59,130,246,0.1);color:#60a5fa;"><i class="bi bi-journal-arrow-down"></i></div>
+        <div><h2>Course Handouts</h2><p>Lecture notes & materials</p></div>
+      </a>
+      <a href="{{ url_for('submit_assignment') }}" class="action-tile">
+        <div class="tile-icon" style="background:rgba(139,92,246,0.1);color:#a78bfa;"><i class="bi bi-filetype-py"></i></div>
+        <div><h2>Submit Assignment</h2><p>.py · .pdf · .zip</p></div>
+      </a>
+      <a href="{{ url_for('my_submissions') }}" class="action-tile">
+        <div class="tile-icon" style="background:rgba(16,185,129,0.1);color:#34d399;"><i class="bi bi-list-check"></i></div>
+        <div><h2>My Submissions</h2><p>Grades & feedback</p></div>
+      </a>
+      <a href="{{ url_for('student_announcements') }}" class="action-tile" style="position:relative;">
+        <div class="tile-icon" style="background:rgba(245,158,11,0.1);color:#fbbf24;"><i class="bi bi-bell"></i></div>
+        <div>
+          <h2>Announcements
+            {% if unread_count > 0 %}
+              <span style="background:#ef4444;color:#fff;font-size:0.65rem;padding:2px 6px;border-radius:10px;margin-left:4px;">{{ unread_count }}</span>
+            {% endif %}
+          </h2>
+          <p>Notices from your lecturer</p>
+        </div>
+      </a>
+    </div>
+
+    {# Recent Submissions #}
+    <div class="dark-card" style="border-radius:14px; overflow:hidden;">
+      <div class="panel-header">
+        <h2><i class="bi bi-clock-history me-2" style="color:#60a5fa;"></i>Recent Submissions</h2>
+        {% if submissions %}<span class="pill badge-blue">{{ submissions|length }} total</span>{% endif %}
+      </div>
+      {% if submissions %}
+        <div style="overflow-x:auto;">
+          <table class="dark-table" style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th>Assignment</th>
+                <th>File</th>
+                <th>Date</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for s in submissions[:5] %}
+              <tr>
+                <td style="color:var(--text-primary);font-weight:600;">{{ s['title'] }}</td>
+                <td><code style="color:#94a3b8;font-size:0.8rem;">{{ s['original_name'] }}</code></td>
+                <td style="color:var(--text-secondary);font-size:0.8rem;">{{ s['submitted_at'] }}</td>
+                <td>
+                  {% if s['grade'] %}
+                    <span class="pill badge-green"><i class="bi bi-check-circle me-1"></i>{{ s['grade'] }}</span>
+                  {% else %}
+                    <span class="pill badge-amber"><i class="bi bi-hourglass-split me-1"></i>Pending</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if submissions|length > 5 %}
+          <a href="{{ url_for('my_submissions') }}" class="view-all-link">
+            View all {{ submissions|length }} submissions <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          <div class="empty-icon">📭</div>
+          <h3>No submissions yet</h3>
+          <p>Upload your first assignment to track it here.</p>
+          <a href="{{ url_for('submit_assignment') }}" class="btn-primary-dark">
+            <i class="bi bi-cloud-arrow-up"></i> Submit Assignment
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Right column: announcements + deadlines #}
+  <div class="side-panel">
+
+    {# Announcements panel #}
+    <div class="panel-card">
+      <div class="panel-head">
+        <h3><i class="bi bi-bell me-1" style="color:#60a5fa;"></i>Announcements
+          {% if unread_count > 0 %}
+            <span style="background:#ef4444;color:#fff;font-size:0.6rem;padding:2px 6px;border-radius:10px;margin-left:4px;">{{ unread_count }} new</span>
+          {% endif %}
+        </h3>
+        <a href="{{ url_for('student_announcements') }}">See all</a>
+      </div>
+      {% set last_seen = session.get('last_seen_announcement_id', 0) %}
+      {% if announcements %}
+        {% for ann in announcements[:4] %}
+        <div class="ann-item {{ 'pinned' if ann['is_pinned'] }} {{ 'is-new' if ann['id'] > last_seen and not ann['is_pinned'] }}">
+          <div class="ann-title">
+            {% if ann['is_pinned'] %}<i class="bi bi-pin-angle-fill me-1" style="color:#fbbf24;font-size:0.8rem;"></i>{% endif %}
+            {{ ann['title'] }}
+          </div>
+          <div class="ann-meta">{{ ann['created_at'][:10] }} · {{ ann['poster_name'] }}</div>
+        </div>
+        {% endfor %}
+        {% if announcements|length > 4 %}
+          <a href="{{ url_for('student_announcements') }}" class="view-all-link">
+            View all {{ announcements|length }} <i class="bi bi-arrow-right ms-1"></i>
+          </a>
+        {% endif %}
+      {% else %}
+        <div style="padding:1.5rem; text-align:center; color:var(--text-muted); font-size:0.82rem;">
+          No announcements yet
+        </div>
+      {% endif %}
+    </div>
+
+    {# Open Assignment Tasks / Deadlines #}
+    {% if open_tasks %}
+    <div class="panel-card">
+      <div class="panel-head">
+        <h3><i class="bi bi-calendar-check me-1" style="color:#a78bfa;"></i>Upcoming Deadlines</h3>
+      </div>
+      {% for task in open_tasks[:5] %}
+      {% set due_str = task['due_date'].replace('T',' ') %}
+      <div class="deadline-item">
+        <div class="deadline-name">{{ task['title'] }}</div>
+        <div class="deadline-due">
+          <i class="bi bi-clock" style="color:var(--text-muted);"></i>
+          <span style="color:var(--text-secondary);">{{ due_str }}</span>
+          {# Colour-coded urgency label #}
+          {% set due_dt = task['due_date'] %}
+          {% if due_dt < now.strftime('%Y-%m-%dT%H:%M') %}
+            <span class="countdown" style="background:rgba(239,68,68,0.12);color:#f87171;">PAST</span>
+          {% elif due_dt[:10] == now.strftime('%Y-%m-%d') %}
+            <span class="countdown" style="background:rgba(239,68,68,0.12);color:#f87171;">Today!</span>
+          {% elif due_dt[:10] <= (now.strftime('%Y-%m-%d')[:8] + str(int(now.strftime('%d'))+1).zfill(2)) %}
+            <span class="countdown" style="background:rgba(245,158,11,0.12);color:#fbbf24;">Tomorrow</span>
+          {% else %}
+            <span class="countdown" style="background:rgba(16,185,129,0.12);color:#34d399;">Upcoming</span>
+          {% endif %}
+        </div>
+      </div>
+      {% endfor %}
+      <a href="{{ url_for('submit_assignment') }}" class="view-all-link">
+        <i class="bi bi-cloud-arrow-up me-1"></i> Submit Now
+      </a>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+
+{% endblock %}
