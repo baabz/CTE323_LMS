@@ -503,6 +503,12 @@ def login():
             flash("Both username and password are required.", "danger")
             return render_template('login.html')
 
+        # Smart matric matching: if student types just their digits (e.g. '0001'),
+        # auto-prepend the matric prefix so it becomes 'COE25HND0001'.
+        # This eliminates the most common login failure for students.
+        if username.isdigit() and len(username) <= MATRIC_LENGTH:
+            username = f"{MATRIC_PREFIX}{username.zfill(MATRIC_LENGTH)}"
+
         user = models.verify_login(username, password)
 
         if user is None:
