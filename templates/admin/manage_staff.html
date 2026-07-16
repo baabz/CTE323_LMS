@@ -4,24 +4,27 @@
 {% block extra_head %}
 <style>
   .page-header {
-    background: linear-gradient(135deg, #475569 0%, #1e293b 100%);
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     border-radius: 14px; padding: 1.75rem 2rem;
     color: #fff; margin-bottom: 2rem;
+    box-shadow: 0 8px 25px rgba(59, 130, 246, 0.15);
   }
   .page-header h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 0.2rem; }
   .page-header p  { color: rgba(255,255,255,0.75); margin: 0; font-size: 0.88rem; }
 
   /* Table styling */
   .staff-table th {
-    background: #f8fafc; font-size: 0.72rem; text-transform: uppercase;
-    letter-spacing: 0.06em; color: #64748b; font-weight: 700;
-    padding: 0.9rem 1.25rem; border-bottom: 1px solid #e2e8f0;
+    background: var(--input-bg);
+    font-size: 0.72rem; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700;
+    padding: 0.9rem 1.25rem; border-bottom: 1px solid var(--border);
   }
   .staff-table td {
     padding: 1rem 1.25rem; vertical-align: middle;
-    border-bottom: 1px solid #f1f5f9; font-size: 0.9rem;
+    border-bottom: 1px solid var(--border); font-size: 0.9rem;
+    color: var(--text-primary);
   }
-  .staff-table tbody tr:hover { background: #f8fafc; }
+  .staff-table tbody tr:hover { background: var(--table-row-hover); }
   .staff-table tbody tr:last-child td { border-bottom: none; }
 
   /* Role badges */
@@ -29,8 +32,8 @@
     font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
     letter-spacing: 0.06em; padding: 4px 10px; border-radius: 20px;
   }
-  .role-badge.admin { background: #fef3c7; color: #b45309; }
-  .role-badge.sub   { background: #ccfbf1; color: #0f766e; }
+  .role-badge.admin { background: rgba(245,158,11,0.15); color: var(--accent-amber); }
+  .role-badge.sub   { background: rgba(16,185,129,0.15); color: var(--accent-green); }
 
   .avatar-circle {
     width: 38px; height: 38px; border-radius: 50%;
@@ -38,20 +41,22 @@
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0;
   }
-  .avatar-circle.admin { background: linear-gradient(135deg, #f59e0b, #d97706); }
-  .avatar-circle.sub   { background: linear-gradient(135deg, #14b8a6, #0f766e); }
+  .avatar-circle.admin { background: linear-gradient(135deg, var(--accent-amber), #d97706); }
+  .avatar-circle.sub   { background: linear-gradient(135deg, var(--accent-green), #0f766e); }
 
   /* Form card */
   .form-card {
-    background: #fff; border: 1px solid #e2e8f0; border-radius: 14px;
-    box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); overflow: hidden;
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
   }
   .form-card .card-header {
-    background: #f8fafc; border-bottom: 1px solid #e2e8f0;
-    padding: 1.25rem 1.5rem; font-weight: 700; color: #1e293b;
+    background: var(--input-bg);
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 1.5rem; font-weight: 700; color: var(--text-primary);
   }
-
-  /* ===== FORM ERROR STYLING (Dark Theme Aligned) ===== */
 
   /* Form-level error summary */
   .flash-msg {
@@ -62,22 +67,22 @@
   .flash-msg.danger {
     background: rgba(239,68,68,0.08);
     border: 1px solid rgba(239,68,68,0.18);
-    color: #f87171;
+    color: #fca5a5;
   }
   .flash-msg i { font-size: 1.1rem; flex-shrink: 0; }
   .flash-msg strong { font-weight: 600; }
   .flash-msg > div { line-height: 1.4; }
 
   /* Field wrapper for conditional error styling */
-  .form-field-group { margin-bottom: 1rem; position: relative; }
-  .form-field-group.has-error .form-label { color: #ef4444; font-weight: 600; }
-  .form-field-group.has-error .form-control,
+  .form-field-group { margin-bottom: 1.25rem; position: relative; }
+  .form-field-group.has-error .form-label { color: #f87171; font-weight: 600; }
+  .form-field-group.has-error .input-dark,
   .form-field-group.has-error .form-select {
     border-color: #f87171 !important;
     background-color: rgba(239,68,68,0.02);
     box-shadow: 0 0 0 3px rgba(239,68,68,0.1);
   }
-  .form-field-group.has-error .form-control:focus,
+  .form-field-group.has-error .input-dark:focus,
   .form-field-group.has-error .form-select:focus {
     border-color: #f87171 !important;
     box-shadow: 0 0 0 3px rgba(239,68,68,0.15) !important;
@@ -98,6 +103,52 @@
     flex-shrink: 0;
     font-size: 0.85rem;
     margin-top: 2px;
+  }
+
+  /* Custom input prefix group */
+  .input-prefix-group {
+    display: flex;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .input-prefix-addon {
+    background: var(--input-bg);
+    color: var(--text-muted);
+    font-weight: 600;
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+    border-right: 1px solid var(--border);
+  }
+  .input-prefix-group .input-dark {
+    border: none;
+    border-radius: 0 10px 10px 0;
+  }
+
+  .form-select-dark {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem 1rem;
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .form-select-dark:focus {
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+  }
+  [data-theme="light"] .form-select-dark option {
+    background: #fff;
+    color: #334155;
+  }
+  [data-theme="dark"] .form-select-dark option {
+    background: var(--bg-surface);
+    color: #fff;
   }
 </style>
 {% endblock %}
@@ -121,19 +172,19 @@
        STAFF LIST TABLE
        ===================================================================== -->
   <div class="col-lg-7">
-    <div class="card border-0 shadow-sm" style="border-radius:14px; overflow:hidden;">
-      <div class="card-header bg-white border-bottom-0 pt-4 pb-0 px-4">
-        <h2 class="h6 fw-bold mb-0">Active Staff Accounts ({{ staff|length }})</h2>
+    <div class="dark-card" style="overflow:hidden;">
+      <div class="card-header border-bottom-0 pt-4 pb-0 px-4">
+        <h2 class="h6 fw-bold mb-0" style="color:var(--text-primary);">Active Staff Accounts ({{ staff|length }})</h2>
       </div>
 
       <div class="card-body p-0 mt-3">
         {% if staff %}
         <div class="table-responsive">
-          <table class="table staff-table mb-0">
+          <table class="table staff-table mb-0" style="border-collapse: collapse; width: 100%;">
             <thead>
               <tr>
-                <th style="padding-left:1.5rem;">Staff Member</th>
-                <th>System Role</th>
+                <th style="padding-left:1.5rem; text-align: left;">Staff Member</th>
+                <th style="text-align: left;">System Role</th>
                 <th style="text-align:right; padding-right:1.5rem;">Joined</th>
               </tr>
             </thead>
@@ -143,13 +194,13 @@
 
                 {# Avatar + Name + Username #}
                 <td style="padding-left:1.5rem;">
-                  <div class="d-flex align-items-center gap-3">
+                  <div class="d-flex align-items-center gap-3" style="display: flex; align-items: center; gap: 1rem;">
                     <div class="avatar-circle {{ 'admin' if member['role'] == 'admin' else 'sub' }}">
                       {{ (member['full_name'] or member['username'])[0] | upper }}
                     </div>
                     <div>
-                      <div class="fw-semibold text-dark">{{ member['full_name'] or member['username'] }}</div>
-                      <div class="small text-muted" style="font-family:monospace;">@{{ member['username'] }}</div>
+                      <div class="fw-semibold" style="color:var(--text-primary); font-weight: 600;">{{ member['full_name'] or member['username'] }}</div>
+                      <div class="small text-muted" style="font-family:monospace; font-size: 0.8rem; color:var(--text-muted);">@{{ member['username'] }}</div>
                     </div>
                   </div>
                 </td>
@@ -164,7 +215,7 @@
                 </td>
 
                 {# Date #}
-                <td style="text-align:right; padding-right:1.5rem; color:#64748b; font-size:0.82rem;">
+                <td style="text-align:right; padding-right:1.5rem; color:var(--text-muted); font-size:0.82rem;">
                   {{ member['created_at'].split(' ')[0] }}
                 </td>
 
@@ -175,7 +226,7 @@
         </div>
 
         {% else %}
-        <div class="p-5 text-center text-muted">
+        <div class="p-5 text-center text-muted" style="padding: 3rem; text-align: center; color: var(--text-muted);">
           <i class="bi bi-people" style="font-size: 2.5rem;"></i>
           <p class="mt-2 mb-0">No staff accounts found.</p>
         </div>
@@ -191,11 +242,11 @@
        ===================================================================== -->
   <div class="col-lg-5">
     <div class="form-card">
-      <div class="card-header d-flex align-items-center gap-2">
-        <i class="bi bi-person-plus-fill text-primary"></i>
+      <div class="card-header d-flex align-items-center gap-2" style="display: flex; align-items: center; gap: 0.5rem;">
+        <i class="bi bi-person-plus-fill" style="color:var(--accent-blue);"></i>
         <span>Create Staff Account</span>
       </div>
-      <div class="card-body p-4">
+      <div class="card-body p-4" style="padding: 1.5rem;">
 
         <form action="{{ url_for('add_staff') }}" method="POST" novalidate>
 
@@ -216,8 +267,8 @@
 
           {# Full Name Field #}
           <div class="form-field-group {% if errors and errors.get('full_name') %}has-error{% endif %}">
-            <label for="staff-fullname" class="form-label fw-semibold" style="color:#334155; font-size:0.9rem;">Full Name</label>
-            <input type="text" class="form-control" id="staff-fullname" name="full_name" placeholder="e.g. Aminu Bello" required value="{{ form.get('full_name','') if form is defined else '' }}">
+            <label for="staff-fullname" class="form-label fw-semibold" style="color:var(--text-secondary); font-size:0.85rem; margin-bottom: 0.4rem;">Full Name</label>
+            <input type="text" class="input-dark" id="staff-fullname" name="full_name" placeholder="e.g. Aminu Bello" required value="{{ form.get('full_name','') if form is defined else '' }}">
             {% if errors and errors.get('full_name') %}
               <div class="form-error-msg">
                 <i class="bi bi-exclamation-circle-fill"></i>
@@ -228,10 +279,10 @@
 
           {# Username Field #}
           <div class="form-field-group {% if errors and errors.get('username') %}has-error{% endif %}">
-            <label for="staff-username" class="form-label fw-semibold" style="color:#334155; font-size:0.9rem;">Username</label>
-            <div class="input-group">
-              <span class="input-group-text bg-light text-muted">@</span>
-              <input type="text" class="form-control" id="staff-username" name="username" placeholder="labassist1" required value="{{ form.get('username','') if form is defined else '' }}">
+            <label for="staff-username" class="form-label fw-semibold" style="color:var(--text-secondary); font-size:0.85rem; margin-bottom: 0.4rem;">Username</label>
+            <div class="input-prefix-group">
+              <span class="input-prefix-addon">@</span>
+              <input type="text" class="input-dark" id="staff-username" name="username" placeholder="labassist1" required value="{{ form.get('username','') if form is defined else '' }}">
             </div>
             {% if errors and errors.get('username') %}
               <div class="form-error-msg">
@@ -243,8 +294,8 @@
 
           {# Password Field #}
           <div class="form-field-group {% if errors and errors.get('password') %}has-error{% endif %}">
-            <label for="staff-password" class="form-label fw-semibold" style="color:#334155; font-size:0.9rem;">Initial Password</label>
-            <input type="password" class="form-control" id="staff-password" name="password" placeholder="Minimum 6 characters" minlength="6" required>
+            <label for="staff-password" class="form-label fw-semibold" style="color:var(--text-secondary); font-size:0.85rem; margin-bottom: 0.4rem;">Initial Password</label>
+            <input type="password" class="input-dark" id="staff-password" name="password" placeholder="Minimum 6 characters" minlength="6" required>
             {% if errors and errors.get('password') %}
               <div class="form-error-msg">
                 <i class="bi bi-exclamation-circle-fill"></i>
@@ -255,8 +306,8 @@
 
           {# Role Dropdown Field #}
           <div class="form-field-group {% if errors and errors.get('role') %}has-error{% endif %}">
-            <label for="staff-role" class="form-label fw-semibold" style="color:#334155; font-size:0.9rem;">Permissions Level</label>
-            <select class="form-select" id="staff-role" name="role">
+            <label for="staff-role" class="form-label fw-semibold" style="color:var(--text-secondary); font-size:0.85rem; margin-bottom: 0.4rem;">Permissions Level</label>
+            <select class="form-select-dark" id="staff-role" name="role">
               <option value="sub_teacher" {% if (form.get('role') if form is defined else 'sub_teacher') == 'sub_teacher' %}selected{% endif %}>Lab Assistant (Post to feed, upload handouts)</option>
               <option value="admin" {% if (form.get('role') if form is defined else '') == 'admin' %}selected{% endif %}>Admin / Lead Lecturer (Full system access)</option>
             </select>
@@ -268,7 +319,7 @@
             {% endif %}
           </div>
 
-          <button type="submit" id="add-staff-btn" class="btn btn-primary w-100 fw-semibold" style="margin-top: 0.5rem;">
+          <button type="submit" id="add-staff-btn" class="btn-primary-dark w-100 fw-semibold" style="margin-top: 0.5rem; justify-content: center; width: 100%;">
             <i class="bi bi-plus-circle me-1"></i> Create Account
           </button>
 
@@ -278,8 +329,8 @@
     </div>
 
     {# Info Notice #}
-    <div class="mt-3 p-3 rounded" style="background:#eff6ff; border: 1px solid #bfdbfe; color:#1e40af; font-size:0.85rem;">
-      <i class="bi bi-info-circle-fill me-1"></i>
+    <div class="mt-3 p-3 rounded" style="margin-top: 1rem; padding: 1rem; border-radius: 10px; background:rgba(59, 130, 246, 0.1); border: 1px solid rgba(59, 130, 246, 0.2); color:var(--text-primary); font-size:0.85rem;">
+      <i class="bi bi-info-circle-fill me-1" style="color:var(--accent-blue); margin-right: 0.25rem;"></i>
       <strong>Important:</strong> Staff must be given their username and password manually. They do not use the public student registration form.
     </div>
   </div>
