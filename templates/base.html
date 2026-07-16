@@ -274,8 +274,7 @@
       flex-direction: column;
       z-index: 200;
       transition: transform 0.3s cubic-bezier(0.16,1,0.3,1);
-      overflow-y: auto;
-      overflow-x: hidden;
+      overflow: hidden;
     }
 
     /* Brand / Logo area */
@@ -351,9 +350,12 @@
       50%       { opacity: 0.55; }
     }
 
-    /* Nav sections */
+    /* Nav sections — this is the only scrollable part of the sidebar */
     .sidebar-nav {
       flex: 1;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
       padding: 1rem 0.75rem;
       display: flex; flex-direction: column; gap: 0.25rem;
     }
