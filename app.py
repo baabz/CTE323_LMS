@@ -252,59 +252,56 @@ def init_db():
         pass  # Column already exists
 
     # -------------------------------------------------------------------------
-    #  STEP 3: Ensure the lead lecturer account has the correct credentials.
+    #  STEP 3: Ensure the lead lecturer and generic admin accounts exist.
     # -------------------------------------------------------------------------
-    pw_hash = hashlib.sha256('260697'.encode('utf-8')).hexdigest()
+    pw_hash_musa = hashlib.sha256('260697'.encode('utf-8')).hexdigest()
+    pw_hash_admin = hashlib.sha256('admin123'.encode('utf-8')).hexdigest()
 
-    # Try to update whichever old placeholder account exists
-    updated = 0
-    try:
-        # SQLite vs Postgres check for rowcount
-        res = conn.execute(
-            """
-            UPDATE users
-            SET username      = 'Musa Yahya',
-                password_hash = ?,
-                full_name     = 'Musa Yahya'
-            WHERE role = 'admin'
-              AND username IN ('admin', 'lecturer')
-            """,
-            (pw_hash,)
+    # A. Check/Create 'Musa Yahya' admin
+    row_musa = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM users WHERE username = 'Musa Yahya' AND role = 'admin'"
+    ).fetchone()
+    exists_musa = 0
+    if row_musa:
+        exists_musa = row_musa.get('cnt') or list(row_musa.values())[0] if isinstance(row_musa, dict) else row_musa[0]
+
+    if exists_musa == 0:
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
+            ('Musa Yahya', pw_hash_musa, 'admin', 'Musa Yahya')
         )
         conn.commit()
-        updated = res.rowcount if hasattr(res, 'rowcount') else 0
-    except Exception:
-        pass
-
-    if updated > 0:
-        print(f"[OK] Lecturer account updated: username='Musa Yahya'")
+        print("[OK] Lecturer account created: username='Musa Yahya'")
     else:
-        # Check if 'Musa Yahya' admin already exists
-        row = conn.execute(
-            "SELECT COUNT(*) AS cnt FROM users WHERE username = 'Musa Yahya' AND role = 'admin'"
-        ).fetchone()
-        
-        exists = 0
-        if row:
-            if isinstance(row, dict):
-                exists = row.get('cnt') or list(row.values())[0]
-            else:
-                exists = row[0]
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE username = 'Musa Yahya' AND role = 'admin'",
+            (pw_hash_musa,)
+        )
+        conn.commit()
+        print("[OK] Lecturer account verified: username='Musa Yahya'")
 
-        if exists == 0:
-            conn.execute(
-                "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
-                ('Musa Yahya', pw_hash, 'admin', 'Musa Yahya')
-            )
-            conn.commit()
-            print("[OK] Lecturer account created: username='Musa Yahya'")
-        else:
-            conn.execute(
-                "UPDATE users SET password_hash = ? WHERE username = 'Musa Yahya' AND role = 'admin'",
-                (pw_hash,)
-            )
-            conn.commit()
-            print("[OK] Lecturer account verified: username='Musa Yahya'")
+    # B. Check/Create 'admin' admin
+    row_admin = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM users WHERE username = 'admin' AND role = 'admin'"
+    ).fetchone()
+    exists_admin = 0
+    if row_admin:
+        exists_admin = row_admin.get('cnt') or list(row_admin.values())[0] if isinstance(row_admin, dict) else row_admin[0]
+
+    if exists_admin == 0:
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
+            ('admin', pw_hash_admin, 'admin', 'Lead Administrator')
+        )
+        conn.commit()
+        print("[OK] Admin account created: username='admin'")
+    else:
+        conn.execute(
+            "UPDATE users SET password_hash = ? WHERE username = 'admin' AND role = 'admin'",
+            (pw_hash_admin,)
+        )
+        conn.commit()
+        print("[OK] Admin account verified: username='admin'")
 
     conn.close()
     if is_postgres:
