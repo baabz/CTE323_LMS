@@ -33,40 +33,43 @@
   /* ---- Public Feed specific styles ---- */
 
   .feed-hero {
-    background: linear-gradient(135deg, #1a6fc4 0%, #0f4c8a 100%);
+    background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
     color: #fff;
-    padding: 3rem 1rem 2.5rem;
+    padding: 3.5rem 1.5rem 3rem;
     text-align: center;
     margin-bottom: 2.5rem;
-    border-radius: 0 0 24px 24px;
+    border-radius: 16px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
   }
 
-  .feed-hero h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-  .feed-hero p  { color: rgba(255,255,255,0.8); font-size: 1.05rem; }
+  .feed-hero h1 { font-size: 2rem; font-weight: 800; margin-bottom: 0.5rem; }
+  .feed-hero p  { color: rgba(255,255,255,0.85); font-size: 1.05rem; }
 
-  .feed-hero .hero-actions { margin-top: 1.5rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
+  .feed-hero .hero-actions { margin-top: 1.75rem; display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap; }
 
   /* ---- Feed post cards ---- */
   .feed-card {
-    background: #fff;
+    background: var(--card-bg);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
     overflow: hidden;
-    border: 1px solid #e2e8f0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    margin-bottom: 1.75rem;
+    border: 1px solid var(--border);
+    transition: border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    margin-bottom: 2rem;
   }
 
   .feed-card:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+    border-color: var(--card-hover-border);
+    transform: translateY(-4px);
+    box-shadow: var(--card-hover-shadow);
   }
 
   .feed-card-media {
     width: 100%;
-    max-height: 420px;
+    max-height: 480px;
     object-fit: cover;
     display: block;
+    border-bottom: 1px solid var(--border);
   }
 
   .feed-card-video {
@@ -74,56 +77,97 @@
     aspect-ratio: 16 / 9;
     border: none;
     display: block;
+    border-bottom: 1px solid var(--border);
   }
 
   .feed-card-body {
-    padding: 1.25rem 1.5rem 1.5rem;
+    padding: 1.5rem;
   }
 
   .feed-card-title {
-    font-size: 1.15rem;
+    font-size: 1.25rem;
     font-weight: 700;
-    color: #1e293b;
-    margin-bottom: 0.4rem;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
   }
 
   .feed-card-desc {
-    color: #475569;
-    font-size: 0.92rem;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
     line-height: 1.6;
-    margin-bottom: 0.75rem;
+    margin-bottom: 1rem;
   }
 
   .feed-card-meta {
-    font-size: 0.78rem;
-    color: #94a3b8;
+    font-size: 0.8rem;
+    color: var(--text-muted);
     display: flex;
-    gap: 1rem;
+    gap: 1.25rem;
     flex-wrap: wrap;
     align-items: center;
   }
 
-  .feed-card-meta i { margin-right: 3px; }
+  .feed-card-meta i { margin-right: 4px; }
 
   .media-badge {
     font-size: 0.7rem;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    padding: 2px 8px;
+    padding: 4px 10px;
     border-radius: 20px;
   }
 
-  .media-badge.image      { background: #dcfce7; color: #16a34a; }
-  .media-badge.video_link { background: #fee2e2; color: #dc2626; }
+  .media-badge.image      { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+  .media-badge.video_link { background: rgba(239,68,68,0.15); color: #f87171; }
 
   .empty-feed {
     text-align: center;
     padding: 5rem 1rem;
-    color: #94a3b8;
+    color: var(--text-muted);
   }
 
   .empty-feed .empty-icon { font-size: 4rem; margin-bottom: 1rem; opacity: 0.5; }
+  .btn-hero-primary {
+    background: #fff;
+    color: var(--accent-blue);
+    font-weight: 700;
+    padding: 0.75rem 1.75rem;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-hero-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    background: #f8fafc;
+  }
+  .btn-hero-primary:active {
+    transform: translateY(0) scale(0.96);
+  }
+
+  .btn-hero-secondary {
+    background: transparent;
+    color: #fff;
+    font-weight: 700;
+    padding: 0.75rem 1.75rem;
+    border-radius: 10px;
+    border: 2px solid rgba(255, 255, 255, 0.4);
+    cursor: pointer;
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-hero-secondary:hover {
+    transform: translateY(-2px);
+    border-color: #fff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+  .btn-hero-secondary:active {
+    transform: translateY(0) scale(0.96);
+  }
 </style>
 {% endblock %}
 
@@ -147,17 +191,17 @@
   <div class="hero-actions">
     {% if not session.get('user_id') %}
       {# For unauthenticated visitors — clear call to action #}
-      <a href="{{ url_for('login') }}" class="btn btn-warning fw-semibold px-4">
-        <i class="bi bi-box-arrow-in-right me-1"></i> Staff / Student Login
+      <a href="{{ url_for('login') }}" class="btn-hero-primary">
+        <i class="bi bi-box-arrow-in-right"></i> Staff / Student Login
       </a>
-      <a href="{{ url_for('register') }}" class="btn btn-outline-light px-4">
-        <i class="bi bi-person-plus me-1"></i> Register as Student
+      <a href="{{ url_for('register') }}" class="btn-hero-secondary">
+        <i class="bi bi-person-plus"></i> Register as Student
       </a>
     {% else %}
       {# For logged-in staff — shortcut to post #}
       {% if session.get('role') in ('admin', 'sub_teacher') %}
-        <a href="{{ url_for('post_to_feed') }}" class="btn btn-warning fw-semibold px-4">
-          <i class="bi bi-megaphone me-1"></i> Post a Class Activity
+        <a href="{{ url_for('post_to_feed') }}" class="btn-hero-primary">
+          <i class="bi bi-megaphone"></i> Post a Class Activity
         </a>
       {% endif %}
     {% endif %}
