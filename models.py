@@ -27,6 +27,114 @@ import sqlite3      # Built-in Python module — no pip install needed
 import hashlib      # Built-in module for hashing passwords
 import os           # For building file paths
 
+# Try importing psycopg2 for production (Render PostgreSQL)
+try:
+    import psycopg2
+    from psycopg2.extras import RealDictCursor
+    from psycopg2 import IntegrityError as PostgresIntegrityError
+except ImportError:
+    psycopg2 = None
+    RealDictCursor = None
+    PostgresIntegrityError = Exception
+
+try:
+    from sqlite3 import IntegrityError as SQLiteIntegrityError
+except ImportError:
+    SQLiteIntegrityError = Exception
+
+# Determine if an exception is a database unique constraint / integrity error
+def is_integrity_error(e):
+    return isinstance(e, (SQLiteIntegrityError, PostgresIntegrityError))
+
+# Clean SQLite syntax to make it PostgreSQL compatible
+def clean_sql_for_postgres(sql_str):
+    lines = []
+    for line in sql_str.splitlines():
+        if line.strip().upper().startswith('PRAGMA'):
+            continue
+        lines.append(line)
+    sql_str = '\n'.join(lines)
+    
+    # SQLite AUTOINCREMENT -> PostgreSQL SERIAL
+    sql_str = sql_str.replace('INTEGER PRIMARY KEY AUTOINCREMENT', 'SERIAL PRIMARY KEY')
+    # SQLite datetimes -> PostgreSQL CURRENT_TIMESTAMP / NOW()
+    sql_str = sql_str.replace("datetime('now', 'localtime')", "CURRENT_TIMESTAMP")
+    sql_str = sql_str.replace("(datetime('now', 'localtime'))", "CURRENT_TIMESTAMP")
+    return sql_str
+
+# Wrapper for cursor execution
+class PostgresCursorWrapper:
+    def __init__(self, cursor, is_insert=False):
+        self.cursor = cursor
+        self.lastrowid = None
+        if is_insert:
+            try:
+                row = self.cursor.fetchone()
+                if row:
+                    self.lastrowid = list(row.values())[0]
+            except Exception:
+                self.lastrowid = None
+
+    def fetchall(self):
+        return self.cursor.fetchall()
+
+    def fetchone(self):
+        return self.cursor.fetchone()
+
+    @property
+    def rowcount(self):
+        return self.cursor.rowcount
+
+# PostgreSQL Connection Wrapper mimicking sqlite3 API
+class PostgresConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, query, params=None):
+        if params is None:
+            params = ()
+        # Convert ? to %s for PostgreSQL
+        query = query.replace('?', '%s')
+        
+        is_insert = query.strip().upper().startswith('INSERT')
+        if is_insert and 'RETURNING' not in query.upper():
+            query += ' RETURNING id'
+
+        cursor = self.conn.cursor(cursor_factory=RealDictCursor)
+        cursor.execute(query, params)
+        return PostgresCursorWrapper(cursor, is_insert)
+
+    def executescript(self, script_str):
+        cleaned = clean_sql_for_postgres(script_str)
+        cursor = self.conn.cursor()
+        cursor.execute(cleaned)
+        return cursor
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
+# SQLite Connection Wrapper to normalize API
+class SQLiteConnectionWrapper:
+    def __init__(self, conn):
+        self.conn = conn
+
+    def execute(self, query, params=None):
+        if params is None:
+            params = ()
+        return self.conn.execute(query, params)
+
+    def executescript(self, script_str):
+        return self.conn.executescript(script_str)
+
+    def commit(self):
+        self.conn.commit()
+
+    def close(self):
+        self.conn.close()
+
 # -----------------------------------------------------------------------------
 #  Database path — one central place so every function finds the same file.
 # -----------------------------------------------------------------------------
@@ -39,16 +147,17 @@ DB_PATH  = os.path.join(BASE_DIR, 'portal.db')          # Full path to our SQLit
 # =============================================================================
 def get_db_connection():
     """
-    Opens a connection to the SQLite database and returns it.
-
-    WHY row_factory?
-        Without it:  row[0], row[1], row[2]  <- hard to read!
-        With it:     row['username'], row['role']  <- clear and self-documenting
+    Opens a connection to the PostgreSQL database on Render or fallback to SQLite locally.
     """
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row   # Enable column-name access on rows
-    conn.execute("PRAGMA foreign_keys = ON")   # Enforce FK constraints (off by default!)
-    return conn
+    db_url = os.environ.get('DATABASE_URL')
+    if db_url and psycopg2:
+        conn = psycopg2.connect(db_url)
+        return PostgresConnectionWrapper(conn)
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA foreign_keys = ON")
+        return SQLiteConnectionWrapper(conn)
 
 
 # =============================================================================
@@ -100,9 +209,10 @@ def create_user(username: str, password: str, role: str) -> bool:
         )
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
-        # IntegrityError raised when UNIQUE constraint is violated (duplicate username)
-        return False
+    except Exception as e:
+        if is_integrity_error(e):
+            return False
+        raise e
     finally:
         conn.close()    # Always close the connection — good habit!
 
@@ -582,8 +692,10 @@ def create_staff_user(username: str, password: str, full_name: str, role: str) -
         )
         conn.commit()
         return True
-    except sqlite3.IntegrityError:
-        return False
+    except Exception as e:
+        if is_integrity_error(e):
+            return False
+        raise e
     finally:
         conn.close()
 

@@ -169,142 +169,129 @@ def init_db():
         4. RENAME the new table to the original name
       This preserves all data while updating the schema.
     """
-    import sqlite3
+    import hashlib
 
-    db_path     = os.path.join(BASE_DIR, 'portal.db')
     schema_path = os.path.join(BASE_DIR, 'schema.sql')
-
-    conn = sqlite3.connect(db_path)
-    conn.execute("PRAGMA foreign_keys = ON")
+    conn = models.get_db_connection()
+    is_postgres = os.environ.get('DATABASE_URL') is not None
 
     # -------------------------------------------------------------------------
-    #  STEP 1: Check if migration from v1 is needed
-    #  We look at the CREATE TABLE statement stored in sqlite_master —
-    #  SQLite stores the original DDL there for each table.
+    #  STEP 1: Check if migration from v1 is needed (SQLite only)
     # -------------------------------------------------------------------------
-    row = conn.execute(
-        "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'"
-    ).fetchone()
-
-    needs_migration = row is not None and "'teacher'" in row[0]
+    needs_migration = False
+    if not is_postgres:
+        try:
+            row = conn.execute(
+                "SELECT sql FROM sqlite_master WHERE type='table' AND name='users'"
+            ).fetchone()
+            needs_migration = row is not None and "'teacher'" in row[0]
+        except Exception:
+            pass
 
     if needs_migration:
         print("[MIGRATE] v1 schema detected. Running migration to v2...")
-
-        # Disable foreign key checks during table rebuild (SQLite requirement)
-        conn.execute("PRAGMA foreign_keys = OFF")
-
-        conn.executescript(
-            """
-            -- Step A: Create the new users table with updated schema
-            CREATE TABLE IF NOT EXISTS users_v2 (
-                id            INTEGER PRIMARY KEY AUTOINCREMENT,
-                username      TEXT    NOT NULL UNIQUE,
-                password_hash TEXT    NOT NULL,
-                role          TEXT    NOT NULL CHECK(role IN ('admin', 'sub_teacher', 'student')),
-                full_name     TEXT,
-                created_at    TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
-            );
-
-            -- Step B: Copy all rows from the old table, converting 'teacher' -> 'admin'
-            INSERT INTO users_v2 (id, username, password_hash, role, full_name, created_at)
-            SELECT
-                id,
-                username,
-                password_hash,
-                CASE role
-                    WHEN 'teacher' THEN 'admin'   -- old 'teacher' becomes new 'admin'
-                    ELSE role                      -- 'student' stays as 'student'
-                END  AS role,
-                NULL AS full_name,   -- v1 had no full_name column
-                created_at
-            FROM users;
-
-            -- Step C: Remove the old table
-            DROP TABLE users;
-
-            -- Step D: Rename the new table to 'users'
-            ALTER TABLE users_v2 RENAME TO users;
-            """
-        )
-        conn.execute("PRAGMA foreign_keys = ON")
-        conn.commit()
-        print("[MIGRATE] Migration complete. 'teacher' roles converted to 'admin'.")
+        try:
+            conn.execute("PRAGMA foreign_keys = OFF")
+            conn.executescript(
+                """
+                CREATE TABLE IF NOT EXISTS users_v2 (
+                    id            INTEGER PRIMARY KEY AUTOINCREMENT,
+                    username      TEXT    NOT NULL UNIQUE,
+                    password_hash TEXT    NOT NULL,
+                    role          TEXT    NOT NULL CHECK(role IN ('admin', 'sub_teacher', 'student')),
+                    full_name     TEXT,
+                    created_at    TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+                );
+                INSERT INTO users_v2 (id, username, password_hash, role, full_name, created_at)
+                SELECT
+                    id,
+                    username,
+                    password_hash,
+                    CASE role
+                        WHEN 'teacher' THEN 'admin'
+                        ELSE role
+                    END  AS role,
+                    NULL AS full_name,
+                    created_at
+                FROM users;
+                DROP TABLE users;
+                ALTER TABLE users_v2 RENAME TO users;
+                """
+            )
+            conn.execute("PRAGMA foreign_keys = ON")
+            conn.commit()
+            print("[MIGRATE] Migration complete. 'teacher' roles converted to 'admin'.")
+        except Exception as e:
+            print(f"[MIGRATE ERROR] Migration failed: {e}")
 
     # -------------------------------------------------------------------------
     #  STEP 2: Run schema.sql to create any missing tables (IF NOT EXISTS)
-    #  After migration, users table already exists — only new tables are created.
     # -------------------------------------------------------------------------
     with open(schema_path, 'r') as schema_file:
         conn.executescript(schema_file.read())
     conn.commit()
 
     # -------------------------------------------------------------------------
-    #  STEP 2b: v3 migration — add profile_picture column if it doesn't exist
-    #  SQLite's ALTER TABLE ADD COLUMN is safe to run even if it already exists
-    #  when wrapped in a try/except — it raises OperationalError if column exists.
+    #  STEP 2b & 2c: Add missing columns if they don't exist
     # -------------------------------------------------------------------------
     try:
         conn.execute("ALTER TABLE users ADD COLUMN profile_picture TEXT")
         conn.commit()
         print("[MIGRATE] v3: Added 'profile_picture' column to users table.")
-    except sqlite3.OperationalError:
-        pass  # Column already exists — no action needed
+    except Exception:
+        pass  # Column already exists or error handled
 
-    # -------------------------------------------------------------------------
-    #  STEP 2c: v4 migration — add task_id to assignments (submissions) table
-    #  Links each student submission to a named assignment task.
-    #  NULL = legacy submission (submitted before tasks were introduced).
-    # -------------------------------------------------------------------------
     try:
-        conn.execute("ALTER TABLE assignments ADD COLUMN task_id INTEGER REFERENCES assignment_tasks(id) ON DELETE SET NULL")
+        if is_postgres:
+            conn.execute("ALTER TABLE assignments ADD COLUMN task_id INTEGER REFERENCES assignment_tasks(id) ON DELETE SET NULL")
+        else:
+            conn.execute("ALTER TABLE assignments ADD COLUMN task_id INTEGER REFERENCES assignment_tasks(id) ON DELETE SET NULL")
         conn.commit()
         print("[MIGRATE] v4: Added 'task_id' column to assignments table.")
-    except sqlite3.OperationalError:
+    except Exception:
         pass  # Column already exists
-
-    # schema.sql CREATE TABLE IF NOT EXISTS handles assignment_tasks + announcements
 
     # -------------------------------------------------------------------------
     #  STEP 3: Ensure the lead lecturer account has the correct credentials.
-    #
-    #  LESSON: This block runs EVERY startup.
-    #    - First, try to UPDATE the old default placeholder accounts
-    #      ('admin' or 'lecturer') to the real lecturer name and password.
-    #    - If no old placeholder exists, check if 'Musa Yahya' is already set.
-    #    - If no admin exists at all, INSERT the account from scratch.
-    #
-    #  SQL USED:
-    #    UPDATE users SET username=?, password_hash=?, full_name=? WHERE ...
-    #    INSERT INTO users (...) VALUES (?, ?, ?, ?)
     # -------------------------------------------------------------------------
-    import hashlib
     pw_hash = hashlib.sha256('260697'.encode('utf-8')).hexdigest()
 
     # Try to update whichever old placeholder account exists
-    updated = conn.execute(
-        """
-        UPDATE users
-        SET username      = 'Musa Yahya',
-            password_hash = ?,
-            full_name     = 'Musa Yahya'
-        WHERE role = 'admin'
-          AND username IN ('admin', 'lecturer')
-        """,
-        (pw_hash,)
-    ).rowcount
-    conn.commit()
+    updated = 0
+    try:
+        # SQLite vs Postgres check for rowcount
+        res = conn.execute(
+            """
+            UPDATE users
+            SET username      = 'Musa Yahya',
+                password_hash = ?,
+                full_name     = 'Musa Yahya'
+            WHERE role = 'admin'
+              AND username IN ('admin', 'lecturer')
+            """,
+            (pw_hash,)
+        )
+        conn.commit()
+        updated = res.rowcount if hasattr(res, 'rowcount') else 0
+    except Exception:
+        pass
 
     if updated > 0:
         print(f"[OK] Lecturer account updated: username='Musa Yahya'")
     else:
-        # Either 'Musa Yahya' already exists correctly, or no admin at all
-        exists = conn.execute(
-            "SELECT COUNT(*) FROM users WHERE username = 'Musa Yahya' AND role = 'admin'"
-        ).fetchone()[0]
+        # Check if 'Musa Yahya' admin already exists
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM users WHERE username = 'Musa Yahya' AND role = 'admin'"
+        ).fetchone()
+        
+        exists = 0
+        if row:
+            if isinstance(row, dict):
+                exists = row.get('cnt') or list(row.values())[0]
+            else:
+                exists = row[0]
 
         if exists == 0:
-            # No admin account exists yet — create one fresh
             conn.execute(
                 "INSERT INTO users (username, password_hash, role, full_name) VALUES (?, ?, ?, ?)",
                 ('Musa Yahya', pw_hash, 'admin', 'Musa Yahya')
@@ -312,7 +299,6 @@ def init_db():
             conn.commit()
             print("[OK] Lecturer account created: username='Musa Yahya'")
         else:
-            # Account exists and already has the right credentials — ensure password is current
             conn.execute(
                 "UPDATE users SET password_hash = ? WHERE username = 'Musa Yahya' AND role = 'admin'",
                 (pw_hash,)
@@ -321,7 +307,10 @@ def init_db():
             print("[OK] Lecturer account verified: username='Musa Yahya'")
 
     conn.close()
-    print("[OK] Database initialised (portal.db)")
+    if is_postgres:
+        print("[OK] Database initialised (PostgreSQL)")
+    else:
+        print("[OK] Database initialised (portal.db)")
 
 
 # =============================================================================
